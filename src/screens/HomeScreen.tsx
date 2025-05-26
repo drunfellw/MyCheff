@@ -13,17 +13,15 @@ import RecipeCard from '../components/RecipeCard';
 import NavigationBar from '../components/NavigationBar';
 import { COLORS, SPACING, FONT_SIZE, DEFAULTS } from '../constants';
 import { CATEGORIES_DATA } from '../services/mockData';
+import type { Recipe } from '../types';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-interface Recipe {
-  id: string;
-  title: string;
-  time: string;
-  category: string;
-  image: string;
-  rating: string;
-  isFavorite: boolean;
+interface HomeScreenProps {
+  navigation?: {
+    navigate: (screen: string) => void;
+    goBack: () => void;
+  };
 }
 
 /**
@@ -32,7 +30,7 @@ interface Recipe {
  * Ana sayfa ekranı - Figma tasarımına tam uygun
  * SearchBar, kategoriler, tarif kartları ve navigation bar içerir
  */
-const HomeScreen: React.FC = () => {
+const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('1'); // Breakfast seçili
   const [activeTab, setActiveTab] = useState<string>('home');
   const [recipes, setRecipes] = useState<Recipe[]>([
@@ -42,7 +40,7 @@ const HomeScreen: React.FC = () => {
       time: '3 min',
       category: 'Beverages',
       image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=300&h=200&fit=crop',
-      rating: '4.8',
+      rating: 4.8,
       isFavorite: false,
     },
     {
@@ -51,7 +49,7 @@ const HomeScreen: React.FC = () => {
       time: '15 min',
       category: 'Breakfast',
       image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=300&h=200&fit=crop',
-      rating: '4.9',
+      rating: 4.9,
       isFavorite: true,
     },
     {
@@ -60,7 +58,7 @@ const HomeScreen: React.FC = () => {
       time: '5 min', 
       category: 'Breakfast',
       image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=300&h=200&fit=crop',
-      rating: '4.7',
+      rating: 4.7,
       isFavorite: false,
     },
     {
@@ -69,7 +67,7 @@ const HomeScreen: React.FC = () => {
       time: '8 min',
       category: 'Breakfast', 
       image: 'https://images.unsplash.com/photo-1582169296194-754c5a464303?w=300&h=200&fit=crop',
-      rating: '4.6',
+      rating: 4.6,
       isFavorite: false,
     },
     {
@@ -78,7 +76,7 @@ const HomeScreen: React.FC = () => {
       time: '2 min',
       category: 'Beverages',
       image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433a?w=300&h=200&fit=crop', 
-      rating: '4.8',
+      rating: 4.8,
       isFavorite: true,
     },
     {
@@ -87,7 +85,7 @@ const HomeScreen: React.FC = () => {
       time: '5 min',
       category: 'Breakfast',
       image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=300&h=200&fit=crop',
-      rating: '4.5',
+      rating: 4.5,
       isFavorite: false,
     }
   ]);
@@ -101,7 +99,8 @@ const HomeScreen: React.FC = () => {
   const cardWidth = availableWidth / numColumns;
 
   const handleSearchPress = (): void => {
-    console.log('Search bar pressed');
+    // SearchScreen'e yönlendir
+    navigation?.navigate('Search');
   };
 
   const handleCategorySelect = (categoryId: string): void => {
