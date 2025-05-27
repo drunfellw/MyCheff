@@ -13,7 +13,7 @@ import {
   Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import RecipeCard from '../components/RecipeCard';
 import NavigationBar from '../components/NavigationBar';
 import FilterModal from '../components/FilterModal';
@@ -52,7 +52,6 @@ interface SearchResultsScreenProps {
  * Grid layout for recipe results
  */
 const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({ navigation, route }) => {
-  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState<string>(route?.params?.initialQuery || '');
   const [isFilterModalVisible, setIsFilterModalVisible] = useState<boolean>(false);
   const [appliedFilters, setAppliedFilters] = useState<FilterOptions>({
@@ -278,7 +277,7 @@ const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({ navigation, r
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
         <TouchableOpacity 

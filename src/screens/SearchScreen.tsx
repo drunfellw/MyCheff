@@ -13,7 +13,7 @@ import {
   Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { NavigationBar } from '../components';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
 
@@ -28,7 +28,7 @@ interface Ingredient {
 
 interface SearchScreenProps {
   navigation?: {
-    navigate: (screen: string) => void;
+    navigate: (screen: string, params?: any) => void;
     goBack: () => void;
   };
 }
@@ -47,7 +47,6 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showResults, setShowResults] = useState<boolean>(false);
   
-  const insets = useSafeAreaInsets();
   const searchInputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -175,7 +174,7 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
   ), [handleSelectIngredient]);
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>

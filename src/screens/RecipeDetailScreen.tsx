@@ -14,7 +14,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import NavigationBar from '../components/NavigationBar';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
 
@@ -88,7 +88,6 @@ interface RecipeDetailScreenProps {
  * Backend-ready structure
  */
 const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, route }) => {
-  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'ingredients' | 'instructions' | 'nutrition'>('ingredients');
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
   const [navActiveTab, setNavActiveTab] = useState<string>('home'); // For navigation bar
@@ -338,7 +337,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
   return (
     <SafeAreaView style={styles.container}>
       {/* Header - Floating over hero image */}
-      <View style={[styles.floatingHeader, { top: insets.top + SPACING.sm }]}>
+      <View style={styles.floatingHeader}>
         <TouchableOpacity 
           style={styles.headerButton}
           onPress={() => navigation?.goBack()}
@@ -496,6 +495,7 @@ const styles = StyleSheet.create({
   },
   floatingHeader: {
     position: 'absolute',
+    top: SPACING.sm,
     left: 0,
     right: 0,
     flexDirection: 'row',

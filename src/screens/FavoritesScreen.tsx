@@ -10,7 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import RecipeCard from '../components/RecipeCard';
 import NavigationBar from '../components/NavigationBar';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
@@ -42,7 +42,6 @@ interface FavoritesScreenProps {
  * Swipe actions for quick management
  */
 const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'rating'>('recent');
   const [activeTab, setActiveTab] = useState<string>('favorites');
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
@@ -235,7 +234,7 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
   ), [sortBy]);
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 

@@ -4,9 +4,10 @@ import {
   Text, 
   ScrollView, 
   StyleSheet, 
-  Dimensions 
+  Dimensions,
+  SafeAreaView 
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import SearchBar from '../components/SearchBar';
 import ScrollMenu from '../components/ScrollMenu';
 import RecipeCard from '../components/RecipeCard';
@@ -107,8 +108,6 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('1'); // Breakfast selected
   const [activeTab, setActiveTab] = useState<string>('home');
   const [recipes, setRecipes] = useState<Recipe[]>(MOCK_RECIPES);
-  
-  const insets = useSafeAreaInsets();
 
   // Grid layout calculations using design system
   const gridLayout = useMemo(() => {
@@ -200,7 +199,7 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
   }, [recipes, gridLayout, handleRecipePress, handleFavoritePress]);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <SafeAreaView style={styles.container}>
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -235,7 +234,7 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
         activeTab={activeTab}
         onTabPress={handleTabPress}
       />
-    </View>
+    </SafeAreaView>
   );
 });
 

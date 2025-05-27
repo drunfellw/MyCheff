@@ -9,7 +9,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { 
@@ -26,7 +26,6 @@ interface AddCardScreenProps {
 }
 
 const AddCardScreen: React.FC<AddCardScreenProps> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
   const { toast, showSuccess, showError, hideToast } = useToast();
   
   const [cardNumber, setCardNumber] = useState('');

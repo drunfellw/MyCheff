@@ -12,7 +12,7 @@ import {
   Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { 
   COLORS, 
   SPACING, 
@@ -41,8 +41,6 @@ interface UserProfile {
 }
 
 const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
-  
   const [profile, setProfile] = useState<UserProfile>({
     name: 'İsmail Uzun',
     email: 'ismail@example.com',
@@ -99,8 +97,7 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
   }, []);
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation?.goBack()}>
@@ -274,8 +271,7 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
 
           <View style={styles.bottomSpacing} />
         </ScrollView>
-      </SafeAreaView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -283,9 +279,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  safeArea: {
-    flex: 1,
   },
   header: {
     flexDirection: 'row',

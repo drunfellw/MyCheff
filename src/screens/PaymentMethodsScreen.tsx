@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { 
@@ -44,7 +44,6 @@ interface PaymentMethodsScreenProps {
  * Features card listing, adding, removing, and setting default
  */
 const PaymentMethodsScreen: React.FC<PaymentMethodsScreenProps> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
   const { toast, showSuccess, showError, hideToast } = useToast();
   
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([

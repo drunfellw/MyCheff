@@ -144,7 +144,7 @@ const CookingStepsScreen = React.memo<CookingStepsScreenProps>(({ navigation, ro
   const isLastStep = currentStep === instructions.length - 1;
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity

@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import NavigationBar from '../components/NavigationBar';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
 
@@ -47,7 +47,6 @@ interface PaymentMethod {
  * payment methods, and settings
  */
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<string>('profile');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
@@ -382,8 +381,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   ), [handleLegalDocument, handleLogout]);
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
         <TouchableOpacity 
@@ -421,8 +419,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           activeTab={activeTab}
           onTabPress={handleTabPress}
         />
-      </SafeAreaView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -430,9 +427,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  safeArea: {
-    flex: 1,
   },
   header: {
     flexDirection: 'row',

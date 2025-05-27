@@ -8,7 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { 
   COLORS, 
   SPACING, 
@@ -23,7 +23,6 @@ interface PrivacyPolicyScreenProps {
 }
 
 const PrivacyPolicyScreen: React.FC<PrivacyPolicyScreenProps> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
 
   return (
     <SafeAreaView style={styles.container}>

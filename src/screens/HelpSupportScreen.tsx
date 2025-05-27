@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { 
   COLORS, 
   SPACING, 
@@ -32,7 +32,6 @@ interface FAQItem {
 }
 
 const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
   const [faqItems, setFaqItems] = useState<FAQItem[]>([
