@@ -154,11 +154,11 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
       case 'home':
         // Already on home screen
         break;
+      case 'cheff':
+        navigation?.navigate('Chat');
+        break;
       case 'search':
         navigation?.navigate('Search');
-        break;
-      case 'favorites':
-        navigation?.navigate('Favorites');
         break;
       case 'profile':
         navigation?.navigate('Profile');

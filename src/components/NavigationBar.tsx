@@ -75,6 +75,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     paddingHorizontal: COMPONENT_SPACING.NAVIGATION.PADDING,
     height: COMPONENT_SPACING.NAVIGATION.HEIGHT,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
     ...SHADOW_PRESETS.NAVIGATION,
   },
   tabItem: {

@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScreenHeader from '../components/ScreenHeader';
 import RecipeCard from '../components/RecipeCard';
+import NavigationBar from '../components/NavigationBar';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, FONT_FAMILY, COMPONENT_SPACING } from '../constants';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -189,6 +190,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('cheff');
 
   // Grid layout calculations using design system
   const gridLayout = useMemo(() => {
@@ -400,6 +402,26 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
     return rows;
   }, [recipes, gridLayout, handleRecipePress, handleFavoritePress]);
 
+  // Handle tab press
+  const handleTabPress = useCallback((tabId: string) => {
+    setActiveTab(tabId);
+    
+    switch (tabId) {
+      case 'home':
+        navigation?.navigate('Home');
+        break;
+      case 'cheff':
+        // Already on chat screen
+        break;
+      case 'search':
+        navigation?.navigate('Search');
+        break;
+      case 'profile':
+        navigation?.navigate('Profile');
+        break;
+    }
+  }, [navigation]);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -536,6 +558,12 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         )}
       </ScrollView>
+
+      {/* Navigation Bar */}
+      <NavigationBar
+        activeTab={activeTab}
+        onTabPress={handleTabPress}
+      />
     </SafeAreaView>
   );
 };
@@ -671,7 +699,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: SPACING.lg,
-    paddingBottom: SPACING.xxxl,
+    paddingBottom: COMPONENT_SPACING.NAVIGATION.HEIGHT + SPACING.lg,
   },
   
   // Recipes Section

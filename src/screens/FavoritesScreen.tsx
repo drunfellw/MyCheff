@@ -172,11 +172,11 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
       case 'home':
         navigation?.navigate('Home');
         break;
+      case 'cheff':
+        navigation?.navigate('Chat');
+        break;
       case 'search':
         navigation?.navigate('Search');
-        break;
-      case 'favorites':
-        // Already on favorites screen
         break;
       case 'profile':
         navigation?.navigate('Profile');

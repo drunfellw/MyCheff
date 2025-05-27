@@ -234,11 +234,11 @@ const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({ navigation, r
       case 'home':
         navigation?.navigate('Home');
         break;
+      case 'cheff':
+        navigation?.navigate('Chat');
+        break;
       case 'search':
         // Already on search screen
-        break;
-      case 'favorites':
-        navigation?.navigate('Favorites');
         break;
       case 'profile':
         navigation?.navigate('Profile');

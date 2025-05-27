@@ -87,7 +87,7 @@ export const COMPONENT_SPACING = {
   
   // Navigation
   NAVIGATION: {
-    HEIGHT: 80,
+    HEIGHT: 70,
     ICON_SIZE: 24,
     PADDING: SPACING.lg,
   },
@@ -157,14 +157,14 @@ export const NAVIGATION_TABS: NavigationTab[] = [
     icon: 'home',
   },
   { 
+    id: 'cheff', 
+    label: 'Cheff', 
+    icon: 'restaurant',
+  },
+  { 
     id: 'search', 
     label: 'Search', 
     icon: 'search',
-  },
-  { 
-    id: 'favorites', 
-    label: 'Favorites', 
-    icon: 'heart',
   },
   { 
     id: 'profile', 

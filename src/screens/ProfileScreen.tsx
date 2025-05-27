@@ -89,11 +89,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       case 'home':
         navigation?.navigate('Home');
         break;
+      case 'cheff':
+        navigation?.navigate('Chat');
+        break;
       case 'search':
         navigation?.navigate('Search');
-        break;
-      case 'favorites':
-        navigation?.navigate('Favorites');
         break;
       case 'profile':
         // Already on profile screen
@@ -202,6 +202,32 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       </View>
     </View>
   ), [userInfo]);
+
+  const renderFavoritesSection = useCallback(() => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>My Favorites</Text>
+      
+      {/* Favorites Card */}
+      <TouchableOpacity 
+        style={styles.favoritesCard} 
+        onPress={() => navigation?.navigate('Favorites')}
+        activeOpacity={0.7}
+      >
+        <View style={styles.favoritesCardHeader}>
+          <View style={styles.favoritesIconContainer}>
+            <Ionicons name="heart" size={28} color={COLORS.primary} />
+          </View>
+          <View style={styles.favoritesCardContent}>
+            <Text style={styles.favoritesCardTitle}>Saved Recipes</Text>
+            <Text style={styles.favoritesCardSubtitle}>
+              {userInfo.favoriteCount} recipes saved to your favorites
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color={COLORS.textMuted} />
+        </View>
+      </TouchableOpacity>
+    </View>
+  ), [navigation, userInfo.favoriteCount]);
 
   const renderPremiumSection = useCallback(() => (
     <View style={styles.section}>
@@ -403,6 +429,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       >
         {renderProfileHeader()}
         {renderStats()}
+        {renderFavoritesSection()}
         {renderPremiumSection()}
         {renderSocialLogins()}
         {renderPaymentMethods()}
@@ -731,6 +758,34 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 120, // NavigationBar + extra space için
+  },
+  favoritesCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.XL,
+    padding: SPACING.lg,
+    ...SHADOW_PRESETS.MEDIUM,
+  },
+  favoritesCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.md,
+  },
+  favoritesIconContainer: {
+    marginRight: SPACING.md,
+  },
+  favoritesCardContent: {
+    flex: 1,
+  },
+  favoritesCardTitle: {
+    fontSize: FONT_SIZE.LG,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
+  },
+  favoritesCardSubtitle: {
+    fontSize: FONT_SIZE.SM,
+    color: COLORS.textMuted,
   },
 });
 

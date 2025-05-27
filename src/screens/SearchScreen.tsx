@@ -16,15 +16,21 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { NavigationBar } from '../components';
 import ScreenHeader from '../components/ScreenHeader';
+import RecipeCard from '../components/RecipeCard';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-interface Ingredient {
+interface Recipe {
   id: string;
-  name: string;
-  category: string;
-  isAvailable?: boolean;
+  title?: string;
+  category?: string;
+  image?: string;
+  time?: string;
+  rating?: string;
+  difficulty?: 'Easy' | 'Medium' | 'Hard';
+  ingredients?: string[];
+  isFavorite?: boolean;
 }
 
 interface SearchScreenProps {
@@ -35,44 +41,108 @@ interface SearchScreenProps {
 }
 
 /**
- * SearchScreen Component - Grok AI Style
+ * SearchScreen Component - Recipe Search
  * 
- * Modern chat-style ingredient search interface
+ * Modern recipe search interface
+ * Real-time search with 2-column grid layout
  * Backend-ready with clean API integration points
- * Minimal design with focus on user experience
  */
 const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedIngredients, setSelectedIngredients] = useState<Ingredient[]>([]);
-  const [searchResults, setSearchResults] = useState<Ingredient[]>([]);
+  const [searchResults, setSearchResults] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showResults, setShowResults] = useState<boolean>(false);
   
   const searchInputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Mock data - Backend'den gelecek
-  const mockIngredients: Ingredient[] = useMemo(() => [
-    { id: '1', name: 'Chicken Breast', category: 'Protein' },
-    { id: '2', name: 'Tomatoes', category: 'Vegetables' },
-    { id: '3', name: 'Onions', category: 'Vegetables' },
-    { id: '4', name: 'Garlic', category: 'Aromatics' },
-    { id: '5', name: 'Rice', category: 'Grains' },
-    { id: '6', name: 'Pasta', category: 'Grains' },
-    { id: '7', name: 'Cheese', category: 'Dairy' },
-    { id: '8', name: 'Eggs', category: 'Protein' },
-    { id: '9', name: 'Milk', category: 'Dairy' },
-    { id: '10', name: 'Bread', category: 'Grains' },
-    { id: '11', name: 'Potatoes', category: 'Vegetables' },
-    { id: '12', name: 'Carrots', category: 'Vegetables' },
-    { id: '13', name: 'Bell Peppers', category: 'Vegetables' },
-    { id: '14', name: 'Olive Oil', category: 'Oils' },
-    { id: '15', name: 'Salt', category: 'Seasonings' },
+  // Mock recipes data - Backend'den gelecek
+  const mockRecipes: Recipe[] = useMemo(() => [
+    { 
+      id: '1', 
+      title: 'Chicken Alfredo Pasta', 
+      category: 'Italian',
+      image: 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=400&h=300&fit=crop',
+      time: '25 min',
+      rating: '4.8',
+      difficulty: 'Medium',
+      ingredients: ['Chicken', 'Pasta', 'Cream', 'Parmesan']
+    },
+    { 
+      id: '2', 
+      title: 'Margherita Pizza', 
+      category: 'Italian',
+      image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=400&h=300&fit=crop',
+      time: '30 min',
+      rating: '4.7',
+      difficulty: 'Medium',
+      ingredients: ['Dough', 'Tomato', 'Mozzarella', 'Basil']
+    },
+    { 
+      id: '3', 
+      title: 'Caesar Salad', 
+      category: 'Salads',
+      image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
+      time: '15 min',
+      rating: '4.5',
+      difficulty: 'Easy',
+      ingredients: ['Lettuce', 'Croutons', 'Parmesan', 'Caesar Dressing']
+    },
+    { 
+      id: '4', 
+      title: 'Beef Stir Fry', 
+      category: 'Asian',
+      image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=300&fit=crop',
+      time: '20 min',
+      rating: '4.6',
+      difficulty: 'Easy',
+      ingredients: ['Beef', 'Vegetables', 'Soy Sauce', 'Rice']
+    },
+    { 
+      id: '5', 
+      title: 'Chocolate Cake', 
+      category: 'Desserts',
+      image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop',
+      time: '60 min',
+      rating: '4.9',
+      difficulty: 'Hard',
+      ingredients: ['Flour', 'Chocolate', 'Eggs', 'Sugar']
+    },
+    { 
+      id: '6', 
+      title: 'Greek Salad', 
+      category: 'Mediterranean',
+      image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&h=300&fit=crop',
+      time: '10 min',
+      rating: '4.4',
+      difficulty: 'Easy',
+      ingredients: ['Tomatoes', 'Cucumber', 'Feta', 'Olives']
+    },
+    { 
+      id: '7', 
+      title: 'Chicken Curry', 
+      category: 'Indian',
+      image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop',
+      time: '40 min',
+      rating: '4.7',
+      difficulty: 'Medium',
+      ingredients: ['Chicken', 'Curry Spices', 'Coconut Milk', 'Rice']
+    },
+    { 
+      id: '8', 
+      title: 'Fish Tacos', 
+      category: 'Mexican',
+      image: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=400&h=300&fit=crop',
+      time: '25 min',
+      rating: '4.6',
+      difficulty: 'Medium',
+      ingredients: ['Fish', 'Tortillas', 'Cabbage', 'Lime']
+    },
   ], []);
 
   // Search functionality - Backend API call point
-  const searchIngredients = useCallback(async (query: string) => {
+  const searchRecipes = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       setShowResults(false);
@@ -83,15 +153,14 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
     
     try {
       // TODO: Replace with actual API call
-      // const response = await ingredientService.search(query);
+      // const response = await recipeService.search(query);
       // setSearchResults(response.data);
       
       // Mock search simulation
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      const filtered = mockIngredients.filter(ingredient =>
-        ingredient.name.toLowerCase().includes(query.toLowerCase()) &&
-        !selectedIngredients.some(selected => selected.id === ingredient.id)
+      const filtered = mockRecipes.filter(recipe =>
+        recipe.title?.toLowerCase().includes(query.toLowerCase())
       );
       
       setSearchResults(filtered);
@@ -110,49 +179,72 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [mockIngredients, selectedIngredients, fadeAnim]);
+  }, [mockRecipes, fadeAnim]);
 
   // Debounced search
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      searchIngredients(searchQuery);
+      searchRecipes(searchQuery);
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, searchIngredients]);
-
-  // Add ingredient to selection
-  const handleSelectIngredient = useCallback((ingredient: Ingredient) => {
-    setSelectedIngredients(prev => [...prev, ingredient]);
-    setSearchQuery('');
-    setShowResults(false);
-    fadeAnim.setValue(0);
-  }, [fadeAnim]);
-
-  // Remove ingredient from selection
-  const handleRemoveIngredient = useCallback((ingredientId: string) => {
-    setSelectedIngredients(prev => prev.filter(item => item.id !== ingredientId));
-  }, []);
+  }, [searchQuery, searchRecipes]);
 
   // Search recipes with selected ingredients
   const handleSearchRecipes = useCallback(() => {
-    if (selectedIngredients.length > 0) {
+    if (searchResults.length > 0) {
       navigation?.navigate('SearchResults', { 
-        ingredients: selectedIngredients.map(i => i.name)
+        recipes: searchResults.map(r => r.title)
       });
     }
-  }, [selectedIngredients, navigation]);
+  }, [searchResults, navigation]);
+
+  // Handle recipe press
+  const handleRecipePress = useCallback((recipe: Recipe) => {
+    navigation?.navigate('RecipeDetail', { recipeId: recipe.id });
+  }, [navigation]);
+
+  // Handle favorite press
+  const handleFavoritePress = useCallback((recipeId: string) => {
+    // TODO: Implement favorite functionality
+    console.log('Favorite pressed:', recipeId);
+  }, []);
+
+  // Render recipe grid
+  const renderRecipeGrid = useCallback(() => {
+    const rows: React.ReactElement[] = [];
+    const numColumns = 2;
+    
+    for (let i = 0; i < searchResults.length; i += numColumns) {
+      const rowRecipes = searchResults.slice(i, i + numColumns);
+      
+      rows.push(
+        <View key={`row-${i}`} style={styles.recipeRow}>
+          {rowRecipes.map((recipe) => (
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              onPress={handleRecipePress}
+              onFavoritePress={handleFavoritePress}
+            />
+          ))}
+        </View>
+      );
+    }
+    
+    return rows;
+  }, [searchResults, handleRecipePress, handleFavoritePress]);
 
   const handleTabPress = useCallback((tabId: string) => {
     switch (tabId) {
       case 'home':
         navigation?.navigate('Home');
         break;
+      case 'cheff':
+        navigation?.navigate('Chat');
+        break;
       case 'search':
         // Already on search screen
-        break;
-      case 'favorites':
-        navigation?.navigate('Favorites');
         break;
       case 'profile':
         navigation?.navigate('Profile');
@@ -161,19 +253,19 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
   }, [navigation]);
 
   // Render search result item
-  const renderSearchResult = useCallback(({ item }: { item: Ingredient }) => (
+  const renderSearchResult = useCallback(({ item }: { item: Recipe }) => (
     <TouchableOpacity
       style={styles.resultItem}
-      onPress={() => handleSelectIngredient(item)}
+      onPress={() => handleSearchRecipes()}
       activeOpacity={0.7}
     >
       <View style={styles.resultContent}>
-        <Text style={styles.resultName}>{item.name}</Text>
+        <Text style={styles.resultName}>{item.title}</Text>
         <Text style={styles.resultCategory}>{item.category}</Text>
       </View>
       <Ionicons name="add-circle-outline" size={24} color={COLORS.primary} />
     </TouchableOpacity>
-  ), [handleSelectIngredient]);
+  ), [handleSearchRecipes]);
 
   return (
     <View style={styles.container}>
@@ -182,27 +274,17 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
         title="Search Recipes"
         onBackPress={() => navigation?.goBack()}
         backgroundColor={COLORS.background}
-        rightElement={
-          selectedIngredients.length > 0 ? (
-            <TouchableOpacity 
-              style={styles.searchButton}
-              onPress={handleSearchRecipes}
-            >
-              <Text style={styles.searchButtonText}>Search</Text>
-            </TouchableOpacity>
-          ) : undefined
-        }
       />
 
       <View style={styles.content}>
         {/* Search Input */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color={COLORS.textMuted} />
+            <Ionicons name="search" size={22} color={COLORS.textMuted} />
             <TextInput
               ref={searchInputRef}
               style={styles.input}
-              placeholder="Search ingredients..."
+              placeholder="Search recipes..."
               placeholderTextColor={COLORS.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -213,74 +295,47 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
               blurOnSubmit={false}
             />
             
-            {isLoading ? (
+            {isLoading && (
               <View style={styles.loadingContainer}>
                 <Ionicons name="hourglass" size={20} color={COLORS.textMuted} />
               </View>
-            ) : (
+            )}
+            
+            {searchQuery.length > 0 && !isLoading && (
               <TouchableOpacity 
-                style={styles.filterButtonInside}
-                onPress={() => {/* TODO: Filter modal */}}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                onPress={() => setSearchQuery('')}
+                style={styles.clearButton}
               >
-                <View style={styles.filterIconContainer}>
-                  <Ionicons name="options" size={20} color={COLORS.textPrimary} />
-                </View>
+                <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
               </TouchableOpacity>
             )}
           </View>
         </View>
 
-        {/* Selected Ingredients */}
-        {selectedIngredients.length > 0 && (
-          <View style={styles.selectedSection}>
-            <FlatList
-              data={selectedIngredients}
-              renderItem={({ item }) => (
-                <TouchableOpacity 
-                  style={styles.selectedItem} 
-                  onPress={() => handleRemoveIngredient(item.id)}
-                >
-                  <Text style={styles.selectedText}>{item.name}</Text>
-                  <Ionicons name="close" size={16} color={COLORS.error} />
-                </TouchableOpacity>
-              )}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.selectedList}
-              ItemSeparatorComponent={() => <View style={{ width: SPACING.sm }} />}
-            />
-          </View>
-        )}
-
         {/* Search Results */}
         {showResults && (
           <Animated.View style={[styles.resultsContainer, { opacity: fadeAnim }]}>
-            <FlatList
-              data={searchResults}
-              renderItem={renderSearchResult}
-              keyExtractor={(item) => item.id}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.resultsList}
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <Ionicons name="search" size={48} color={COLORS.textMuted} />
-                  <Text style={styles.emptyText}>No ingredients found</Text>
-                  <Text style={styles.emptySubtext}>Try a different search term</Text>
-                </View>
-              }
-            />
+            {searchResults.length > 0 ? (
+              <View style={styles.recipeGrid}>
+                {renderRecipeGrid()}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Ionicons name="search" size={48} color={COLORS.textMuted} />
+                <Text style={styles.emptyText}>No recipes found</Text>
+                <Text style={styles.emptySubtext}>Try a different search term</Text>
+              </View>
+            )}
           </Animated.View>
         )}
 
         {/* Empty State */}
-        {!showResults && selectedIngredients.length === 0 && (
+        {!showResults && (
           <View style={styles.welcomeState}>
             <Ionicons name="restaurant-outline" size={64} color={COLORS.textMuted} />
             <Text style={styles.welcomeTitle}>Find Your Perfect Recipe</Text>
             <Text style={styles.welcomeSubtitle}>
-              Search and select ingredients you have available to discover amazing recipes
+              Search for delicious recipes by name or ingredient
             </Text>
           </View>
         )}
@@ -304,22 +359,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchContainer: {
-    padding: SPACING.md,
+    padding: SPACING.lg,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.ROUND,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: Platform.OS === 'ios' ? SPACING.sm : SPACING.xs,
-    gap: SPACING.sm,
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.LG,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: SPACING.md,
+    minHeight: 52,
+    ...SHADOW_PRESETS.SMALL,
   },
   input: {
     flex: 1,
-    fontSize: FONT_SIZE.MD,
+    fontSize: FONT_SIZE.LG,
     color: COLORS.textPrimary,
-    padding: 0,
+    paddingVertical: 0,
+    fontWeight: '400',
   },
   selectedList: {
     padding: SPACING.md,
@@ -365,6 +428,22 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.SM,
     color: COLORS.textMuted,
   },
+  loadingContainer: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  clearButton: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resultsContainer: {
+    flex: 1,
+  },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -402,46 +481,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  loadingContainer: {
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 2,
+  recipeRow: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    marginBottom: SPACING.md,
   },
-  filterButtonInside: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: BORDER_RADIUS.CIRCLE,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedSection: {
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  resultsContainer: {
+  recipeGrid: {
     flex: 1,
-  },
-  searchButton: {
-    padding: SPACING.md,
-    backgroundColor: COLORS.primary,
-    borderRadius: BORDER_RADIUS.ROUND,
-  },
-  searchButtonText: {
-    fontSize: FONT_SIZE.MD,
-    fontWeight: '500',
-    color: COLORS.white,
+    padding: SPACING.lg,
+    paddingBottom: 100, // NavigationBar için extra padding
   },
 });
 

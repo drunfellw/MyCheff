@@ -19,6 +19,7 @@ interface ScreenHeaderProps {
   title: string;
   onBackPress?: () => void;
   rightElement?: React.ReactNode;
+  centerElement?: React.ReactNode;
   showBackButton?: boolean;
   backgroundColor?: string;
 }
@@ -33,6 +34,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   title,
   onBackPress,
   rightElement,
+  centerElement,
   showBackButton = true,
   backgroundColor = COLORS.background,
 }) => {
@@ -53,9 +55,15 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
           <View style={styles.backButtonSpacer} />
         )}
         
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {title}
-        </Text>
+        <View style={styles.centerContainer}>
+          {centerElement ? (
+            centerElement
+          ) : (
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {title}
+            </Text>
+          )}
+        </View>
         
         <View style={styles.rightContainer}>
           {rightElement || <View style={styles.rightSpacer} />}
@@ -94,9 +102,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.XL,
     fontWeight: '700',
     color: COLORS.textPrimary,
-    flex: 1,
     textAlign: 'center',
-    marginHorizontal: SPACING.md,
   },
   rightContainer: {
     width: 80,
@@ -108,6 +114,11 @@ const styles = StyleSheet.create({
   rightSpacer: {
     width: 40,
     height: 40,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
