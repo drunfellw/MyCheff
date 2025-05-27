@@ -51,9 +51,18 @@ const RecipeCard = ({ recipe, onPress, onFavoritePress, isSelected = false, isSe
           resizeMode="cover"
         />
         
+        {/* Selection Overlay */}
+        {isSelectionMode && (
+          <View style={[styles.selectionOverlay, isSelected && styles.selectedOverlay]} />
+        )}
+        
         {/* Favorite/Selection Button */}
         <TouchableOpacity
-          style={styles.favoriteButton}
+          style={[
+            styles.favoriteButton,
+            isSelectionMode && styles.selectionButton,
+            isSelected && styles.selectedButton
+          ]}
           onPress={(e) => {
             e.stopPropagation();
             onFavoritePress?.(recipe.id);
@@ -63,8 +72,8 @@ const RecipeCard = ({ recipe, onPress, onFavoritePress, isSelected = false, isSe
           {isSelectionMode ? (
             <Ionicons
               name={isSelected ? "checkmark-circle" : "ellipse-outline"}
-              size={22}
-              color={isSelected ? COLORS.primary : COLORS.white}
+              size={24}
+              color={isSelected ? COLORS.white : COLORS.white}
             />
           ) : (
             <Ionicons
@@ -137,6 +146,23 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.CIRCLE,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  selectionButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  selectedButton: {
+    backgroundColor: COLORS.primary,
+  },
+  selectionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  selectedOverlay: {
+    backgroundColor: 'rgba(249, 58, 59, 0.3)',
   },
   timeBadge: {
     position: 'absolute',

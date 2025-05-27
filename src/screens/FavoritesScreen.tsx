@@ -52,7 +52,7 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
   const [favoriteRecipes, setFavoriteRecipes] = useState<Recipe[]>([
     {
       id: 'fav-1',
-      title: 'Mushroom Risotto',
+      title: 'Mushroom Risosaldkjasldkasjdlsakdjaslkjtto',
       time: '35 min',
       category: 'Main Course',
       image: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=300&h=200&fit=crop',
@@ -111,10 +111,6 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
     }
   }, [favoriteRecipes, sortBy]);
 
-  const handleRecipePress = useCallback((recipe: Recipe) => {
-    navigation?.navigate('RecipeDetail', { recipe });
-  }, [navigation]);
-
   const handleFavoritePress = useCallback((recipeId: string) => {
     if (isSelectionMode) {
       // Toggle selection
@@ -136,6 +132,16 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
       // await recipeService.removeFavorite(recipeId);
     }
   }, [isSelectionMode]);
+
+  const handleRecipePress = useCallback((recipe: Recipe) => {
+    if (isSelectionMode) {
+      // Seçim modunda sadece seçim yap
+      handleFavoritePress(recipe.id);
+    } else {
+      // Normal modda tarif detayına git
+      navigation?.navigate('RecipeDetail', { recipe });
+    }
+  }, [navigation, isSelectionMode, handleFavoritePress]);
 
   const handleDeletePress = useCallback(() => {
     if (isSelectionMode) {

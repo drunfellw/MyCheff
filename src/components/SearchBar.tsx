@@ -27,9 +27,9 @@ const SearchBar = ({ onPress, onFiltersApplied, style }: SearchBarProps): React.
   
   const typewriterTexts: string[] = [
     'Search recipes by what you have',
-    'Find meals with your ingredients',
+    'Amarikan Rapi gibi kadını aşağılamam. hepsi zaten bir çiçek koparamam. Kadınlar gününüz kutlu olsun..',
     'Discover dishes you can cook now',
-    'Cook with available ingredients'
+    'What would you like to cook today?'
   ];
 
   useEffect(() => {
@@ -95,7 +95,7 @@ const SearchBar = ({ onPress, onFiltersApplied, style }: SearchBarProps): React.
         <View style={styles.filterIconContainer}>
           <Ionicons 
             name="options" 
-            size={16} 
+            size={20} 
             color={COLORS.textPrimary} 
           />
         </View>
@@ -105,7 +105,7 @@ const SearchBar = ({ onPress, onFiltersApplied, style }: SearchBarProps): React.
       <FilterModal
         visible={showFilterModal}
         onClose={() => setShowFilterModal(false)}
-        onApplyFilters={(filters) => {
+        onApply={(filters) => {
           onFiltersApplied?.(filters);
           console.log('Filters applied:', filters);
         }}
@@ -155,14 +155,14 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   filterButton: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
   filterIconContainer: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     borderRadius: BORDER_RADIUS.CIRCLE,
     borderWidth: 1.5,
     borderColor: COLORS.border,

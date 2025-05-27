@@ -107,8 +107,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const cardWidth = availableWidth / numColumns;
 
   const handleSearchPress = (): void => {
-    // SearchResultsScreen'e yönlendir
-    navigation?.navigate('SearchResults');
+    // ChatScreen'e yönlendir
+    navigation?.navigate('Chat');
   };
 
   const handleCategorySelect = (categoryId: string): void => {

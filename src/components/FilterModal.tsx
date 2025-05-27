@@ -8,6 +8,7 @@ import {
   Dimensions,
   StyleSheet,
   ScrollView,
+  PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -60,6 +61,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(screenHeight)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const dragY = useRef(new Animated.Value(0)).current;
 
   // Mock data - Backend'den gelecek
   const defaultFilters: FilterState = useMemo(() => ({
@@ -93,9 +95,36 @@ const FilterModal: React.FC<FilterModalProps> = ({
     initialFilters || defaultFilters
   );
 
+  // Pan responder for drag to close
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        if (gestureState.dy > 0) {
+          dragY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dy > 100 || gestureState.vy > 0.5) {
+          // Close modal
+          onClose();
+        } else {
+          // Snap back
+          Animated.spring(dragY, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
   // Animation effects
   useEffect(() => {
     if (visible) {
+      dragY.setValue(0);
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: 0,
@@ -120,9 +149,14 @@ const FilterModal: React.FC<FilterModalProps> = ({
           duration: 250,
           useNativeDriver: true,
         }),
+        Animated.timing(dragY, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
       ]).start();
     }
-  }, [visible, translateY, backdropOpacity]);
+  }, [visible, translateY, backdropOpacity, dragY]);
 
   // Toggle category selection
   const toggleCategory = useCallback((categoryId: string) => {
@@ -247,10 +281,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
         style={[
           styles.modalContainer,
           {
-            transform: [{ translateY }],
+            transform: [{ translateY }, { translateY: dragY }],
             paddingBottom: insets.bottom + SPACING.lg,
           },
         ]}
+        {...panResponder.panHandlers}
       >
         {/* Handle */}
         <View style={styles.handle} />
@@ -274,7 +309,13 @@ const FilterModal: React.FC<FilterModalProps> = ({
         <ScrollView
           style={styles.content}
           showsVerticalScrollIndicator={false}
-          bounces={false}
+          bounces={true}
+          onScrollEndDrag={(event) => {
+            // Eğer yukarı kaydırma hızı yeterince fazlaysa modal'ı kapat
+            if (event.nativeEvent.velocity && event.nativeEvent.velocity.y < -1000) {
+              onClose();
+            }
+          }}
         >
           {/* Categories */}
           <View style={styles.section}>
@@ -418,8 +459,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   categoryItemSelected: {
-    backgroundColor: COLORS.textPrimary,
-    borderColor: COLORS.textPrimary,
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   categoryText: {
     fontSize: FONT_SIZE.MD,
@@ -449,8 +490,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   filterOptionSelected: {
-    backgroundColor: COLORS.textPrimary,
-    borderColor: COLORS.textPrimary,
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   filterOptionText: {
     fontSize: FONT_SIZE.MD,
@@ -467,7 +508,7 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
   },
   applyButton: {
-    backgroundColor: COLORS.textPrimary,
+    backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.LG,
     paddingVertical: SPACING.lg,
     alignItems: 'center',

@@ -9,6 +9,9 @@ import {
   SafeAreaView,
   Dimensions,
   Share,
+  FlatList,
+  Modal,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,7 +46,10 @@ interface Recipe {
   id: string;
   title: string;
   description: string;
-  image: string;
+  media: Array<{
+    type: 'image' | 'video';
+    url: string;
+  }>;
   category: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
   cookingTime: string;
@@ -87,13 +93,20 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
   const [activeTab, setActiveTab] = useState<'ingredients' | 'instructions' | 'nutrition'>('ingredients');
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
   const [navActiveTab, setNavActiveTab] = useState<string>('home'); // For navigation bar
+  const [activeMediaIndex, setActiveMediaIndex] = useState<number>(0);
+  const [isFullScreenVisible, setIsFullScreenVisible] = useState<boolean>(false);
+  const [fullScreenImageIndex, setFullScreenImageIndex] = useState<number>(0);
 
   // Mock recipe data - Backend'den gelecek
   const recipe: Recipe = useMemo(() => route?.params?.recipe || {
     id: '1',
     title: 'Creamy Mushroom Risotto',
     description: 'A rich and creamy Italian risotto made with fresh mushrooms, parmesan cheese, and aromatic herbs. Perfect for a cozy dinner.',
-    image: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=800&h=600&fit=crop',
+    media: [
+      { type: 'image', url: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=800&h=600&fit=crop' },
+      { type: 'image', url: 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800&h=600&fit=crop' },
+      { type: 'image', url: 'https://images.unsplash.com/photo-1485962398705-ef6a13c41e8f?w=800&h=600&fit=crop' },
+    ],
     category: 'Main Course',
     difficulty: 'Medium',
     cookingTime: '35 min',
@@ -158,9 +171,10 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
 
   // Start cooking
   const handleStartCooking = useCallback(() => {
-    // TODO: Navigate to cooking mode
-    // navigation?.navigate('CookingMode', { recipe });
-    console.log('Start cooking:', recipe.title);
+    navigation?.navigate('CookingSteps', {
+      instructions: recipe.instructions,
+      recipeName: recipe.title
+    });
   }, [recipe, navigation]);
 
   // Handle navigation bar tab press
@@ -182,6 +196,76 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
         break;
     }
   }, [navigation]);
+
+  // Render media item for carousel
+  const renderMediaItem = useCallback(({ item, index }: { item: { type: 'image' | 'video'; url: string }, index: number }) => (
+    <TouchableOpacity
+      onPress={() => {
+        setFullScreenImageIndex(index);
+        setIsFullScreenVisible(true);
+      }}
+      activeOpacity={0.9}
+    >
+      <Image
+        source={{ uri: item.url }}
+        style={styles.heroImage}
+        resizeMode="cover"
+      />
+    </TouchableOpacity>
+  ), []);
+
+  // Render pagination dots
+  const renderPaginationDots = () => (
+    <View style={styles.paginationContainer}>
+      {recipe.media.map((_, index) => (
+        <View
+          key={index}
+          style={[styles.paginationDot, index === activeMediaIndex && styles.paginationDotActive]}
+        />
+      ))}
+    </View>
+  );
+
+  // Render full screen image modal
+  const renderFullScreenModal = () => (
+    <Modal
+      visible={isFullScreenVisible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setIsFullScreenVisible(false)}
+    >
+      <View style={styles.fullScreenContainer}>
+        <StatusBar hidden />
+        <TouchableOpacity
+          style={styles.fullScreenCloseButton}
+          onPress={() => setIsFullScreenVisible(false)}
+        >
+          <Ionicons name="close" size={30} color={COLORS.white} />
+        </TouchableOpacity>
+        
+        <FlatList
+          data={recipe.media}
+          renderItem={({ item }) => (
+            <Image
+              source={{ uri: item.url }}
+              style={styles.fullScreenImage}
+              resizeMode="contain"
+            />
+          )}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          initialScrollIndex={fullScreenImageIndex}
+          getItemLayout={(data, index) => ({
+            length: screenWidth,
+            offset: screenWidth * index,
+            index,
+          })}
+          keyExtractor={(item, index) => index.toString()}
+        />
+      </View>
+    </Modal>
+  );
 
   // Render ingredient item
   const renderIngredient = useCallback((ingredient: Ingredient) => (
@@ -214,10 +298,15 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
   ), []);
 
   // Render nutrition item
-  const renderNutritionItem = useCallback((label: string, value: number, unit: string) => (
+  const renderNutritionItem = useCallback((label: string, value: number, unit: string, color: string, icon: string) => (
     <View style={styles.nutritionItem}>
-      <Text style={styles.nutritionValue}>{value}{unit}</Text>
-      <Text style={styles.nutritionLabel}>{label}</Text>
+      <View style={[styles.nutritionIconContainer, { backgroundColor: color }]}>
+        <Ionicons name={icon as any} size={20} color={COLORS.white} />
+      </View>
+      <View style={styles.nutritionContent}>
+        <Text style={styles.nutritionValue}>{value}{unit}</Text>
+        <Text style={styles.nutritionLabel}>{label}</Text>
+      </View>
     </View>
   ), []);
 
@@ -240,11 +329,11 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
         return (
           <View style={styles.tabContent}>
             <View style={styles.nutritionGrid}>
-              {renderNutritionItem('Calories', recipe.nutrition.calories, '')}
-              {renderNutritionItem('Protein', recipe.nutrition.protein, 'g')}
-              {renderNutritionItem('Carbs', recipe.nutrition.carbs, 'g')}
-              {renderNutritionItem('Fat', recipe.nutrition.fat, 'g')}
-              {renderNutritionItem('Fiber', recipe.nutrition.fiber, 'g')}
+              {renderNutritionItem('Calories', recipe.nutrition.calories, '', '#FF6B6B', 'flame')}
+              {renderNutritionItem('Protein', recipe.nutrition.protein, 'g', '#4ECDC4', 'fitness')}
+              {renderNutritionItem('Carbs', recipe.nutrition.carbs, 'g', '#45B7D1', 'leaf')}
+              {renderNutritionItem('Fat', recipe.nutrition.fat, 'g', '#FFA726', 'water')}
+              {renderNutritionItem('Fiber', recipe.nutrition.fiber, 'g', '#66BB6A', 'nutrition')}
             </View>
           </View>
         );
@@ -293,18 +382,23 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* Hero Image */}
+        {/* Hero Carousel */}
         <View style={styles.heroContainer}>
-          <Image
-            source={{ uri: recipe.image }}
-            style={styles.heroImage}
-            resizeMode="cover"
+          <FlatList
+            data={recipe.media}
+            renderItem={renderMediaItem}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(event) => {
+              const newIndex = Math.round(
+                event.nativeEvent.contentOffset.x / screenWidth
+              );
+              setActiveMediaIndex(newIndex);
+            }}
+            keyExtractor={(item, index) => index.toString()}
           />
-          <View style={styles.heroOverlay}>
-            <View style={styles.difficultyBadge}>
-              <Text style={styles.difficultyText}>{recipe.difficulty}</Text>
-            </View>
-          </View>
+          {renderPaginationDots()}
         </View>
 
         {/* Recipe Info */}
@@ -319,10 +413,6 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
             <View style={styles.statItem}>
               <Ionicons name="time-outline" size={20} color={COLORS.textSecondary} />
               <Text style={styles.statText}>{recipe.cookingTime}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Ionicons name="people-outline" size={20} color={COLORS.textSecondary} />
-              <Text style={styles.statText}>{recipe.servings} servings</Text>
             </View>
             <View style={styles.statItem}>
               <Ionicons name="star" size={20} color="#FFD700" />
@@ -347,14 +437,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
             </View>
           </View>
 
-          {/* Tags */}
-          <View style={styles.tagsContainer}>
-            {recipe.tags.map((tag, index) => (
-              <View key={index} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
-          </View>
+
 
           {/* Tabs */}
           <View style={styles.tabsContainer}>
@@ -386,26 +469,29 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
 
           {/* Tab Content */}
           {renderTabContent()}
+
+          {/* Bottom Action */}
+          <View style={styles.bottomAction}>
+            <TouchableOpacity
+              style={styles.startCookingButton}
+              onPress={handleStartCooking}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="play" size={20} color={COLORS.white} />
+              <Text style={styles.startCookingText}>Start Cooking</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
-
-      {/* Bottom Action */}
-      <View style={[styles.bottomAction, { paddingBottom: insets.bottom + SPACING.md }]}>
-        <TouchableOpacity
-          style={styles.startCookingButton}
-          onPress={handleStartCooking}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="play" size={20} color={COLORS.white} />
-          <Text style={styles.startCookingText}>Start Cooking</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Navigation Bar */}
       <NavigationBar
         activeTab={navActiveTab}
         onTabPress={handleNavTabPress}
       />
+
+      {/* Full Screen Image Modal */}
+      {renderFullScreenModal()}
     </SafeAreaView>
   );
 };
@@ -446,30 +532,31 @@ const styles = StyleSheet.create({
     height: screenHeight * 0.4,
   },
   heroImage: {
-    width: '100%',
+    width: screenWidth,
     height: '100%',
   },
-  heroOverlay: {
+  paginationContainer: {
     position: 'absolute',
-    top: 0,
+    bottom: SPACING.lg,
     left: 0,
     right: 0,
-    bottom: 0,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    padding: SPACING.lg,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.sm,
   },
-  difficultyBadge: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: BORDER_RADIUS.ROUND,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: BORDER_RADIUS.CIRCLE,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
-  difficultyText: {
-    fontSize: FONT_SIZE.SM,
-    fontWeight: '600',
-    color: COLORS.white,
+  paginationDotActive: {
+    backgroundColor: COLORS.white,
+    width: 10,
+    height: 10,
   },
+
   recipeInfo: {
     backgroundColor: COLORS.white,
     borderTopLeftRadius: BORDER_RADIUS.XXL,
@@ -477,7 +564,7 @@ const styles = StyleSheet.create({
     marginTop: -SPACING.xl,
     paddingTop: SPACING.xl,
     paddingHorizontal: SPACING.xl,
-    paddingBottom: 100, // Space for bottom action
+    paddingBottom: SPACING.xl,
   },
   recipeHeader: {
     marginBottom: SPACING.xl,
@@ -560,59 +647,64 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.LG,
     padding: SPACING.xs,
     marginBottom: SPACING.xl,
+    ...SHADOW_PRESETS.SMALL,
   },
   tab: {
     flex: 1,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.lg,
     alignItems: 'center',
     borderRadius: BORDER_RADIUS.MD,
   },
   activeTab: {
-    backgroundColor: COLORS.white,
-    ...SHADOW_PRESETS.SMALL,
+    backgroundColor: COLORS.primary,
+    ...SHADOW_PRESETS.MEDIUM,
   },
   tabText: {
     fontSize: FONT_SIZE.MD,
-    fontWeight: '500',
-    color: COLORS.textMuted,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
   },
   activeTabText: {
-    color: COLORS.textPrimary,
-    fontWeight: '600',
+    color: COLORS.white,
+    fontWeight: '700',
   },
   tabContent: {
-    gap: SPACING.lg,
+    gap: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   ingredientItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.LG,
     padding: SPACING.lg,
     gap: SPACING.md,
+    marginBottom: SPACING.sm,
+    ...SHADOW_PRESETS.SMALL,
   },
   ingredientAmount: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.background,
     borderRadius: BORDER_RADIUS.MD,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    minWidth: 80,
+    paddingVertical: SPACING.md,
+    minWidth: 90,
     alignItems: 'center',
   },
   ingredientAmountText: {
-    fontSize: FONT_SIZE.SM,
-    fontWeight: '600',
+    fontSize: FONT_SIZE.MD,
+    fontWeight: '700',
     color: COLORS.textPrimary,
   },
   ingredientName: {
     flex: 1,
-    fontSize: FONT_SIZE.MD,
+    fontSize: FONT_SIZE.LG,
     color: COLORS.textPrimary,
-    fontWeight: '500',
+    fontWeight: '600',
+    lineHeight: 24,
   },
   instructionItem: {
     flexDirection: 'row',
@@ -653,16 +745,26 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
   },
   nutritionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: SPACING.md,
   },
   nutritionItem: {
-    backgroundColor: COLORS.background,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.LG,
     padding: SPACING.lg,
+    marginBottom: SPACING.sm,
+    ...SHADOW_PRESETS.SMALL,
+  },
+  nutritionIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: BORDER_RADIUS.CIRCLE,
+    justifyContent: 'center',
     alignItems: 'center',
-    minWidth: '30%',
+    marginRight: SPACING.md,
+  },
+  nutritionContent: {
     flex: 1,
   },
   nutritionValue: {
@@ -672,26 +774,24 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   nutritionLabel: {
-    fontSize: FONT_SIZE.SM,
-    color: COLORS.textMuted,
-    fontWeight: '500',
+    fontSize: FONT_SIZE.MD,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
   },
   bottomAction: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: COLORS.white,
     paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.lg,
+    paddingBottom: SPACING.md,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
+    marginBottom: 80,
   },
   startCookingButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.textPrimary,
+    backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.LG,
     paddingVertical: SPACING.lg,
     gap: SPACING.sm,
@@ -701,6 +801,28 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.LG,
     fontWeight: '600',
     color: COLORS.white,
+  },
+  fullScreenContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    width: 50,
+    height: 50,
+    borderRadius: BORDER_RADIUS.CIRCLE,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: screenWidth,
+    height: screenHeight,
   },
 });
 

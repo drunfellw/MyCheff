@@ -714,7 +714,7 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.md,
   },
   bottomSpacing: {
-    height: SPACING.xl,
+    height: 120, // NavigationBar + extra space için
   },
 });
 
