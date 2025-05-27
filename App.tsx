@@ -34,17 +34,19 @@ interface Navigation {
  * Main App Component
  * 
  * MyCheff Frontend - Professional Recipe App
- * Features optimized navigation system and performance
+ * Features optimized navigation system and performance with state preservation
  */
 const App = React.memo(() => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('Home');
   const [navigationHistory, setNavigationHistory] = useState<Screen[]>(['Home']);
+  const [mountedScreens, setMountedScreens] = useState<Set<Screen>>(new Set(['Home']));
 
   const navigation: Navigation = useMemo(() => ({
     navigate: (screen: string, params?: NavigationParams) => {
       const targetScreen = screen as Screen;
       setCurrentScreen(targetScreen);
       setNavigationHistory(prev => [...prev, targetScreen]);
+      setMountedScreens(prev => new Set([...prev, targetScreen]));
     },
     goBack: () => {
       setNavigationHistory(prev => {
@@ -60,48 +62,90 @@ const App = React.memo(() => {
     getCurrentScreen: () => currentScreen,
   }), [currentScreen]);
 
-  const renderScreen = useCallback(() => {
+  const renderAllScreens = useCallback(() => {
     const screenProps = { navigation };
     
-    switch (currentScreen) {
-      case 'Home':
-        return <HomeScreen {...screenProps} />;
-      case 'Search':
-        return <SearchScreen {...screenProps} />;
-      case 'SearchResults':
-        return <SearchResultsScreen {...screenProps} />;
-      case 'Favorites':
-        return <FavoritesScreen {...screenProps} />;
-      case 'RecipeDetail':
-        return <RecipeDetailScreen {...screenProps} />;
-      case 'Profile':
-        return <ProfileScreen {...screenProps} />;
-      case 'Chat':
-        return <ChatScreen {...screenProps} />;
-      case 'CookingSteps':
-        return <CookingStepsScreen {...screenProps} />;
-      case 'PaymentMethods':
-        return <PaymentMethodsScreen {...screenProps} />;
-      case 'PrivacyPolicy':
-        return <PrivacyPolicyScreen {...screenProps} />;
-      case 'TermsOfService':
-        return <TermsOfServiceScreen {...screenProps} />;
-      case 'HelpSupport':
-        return <HelpSupportScreen {...screenProps} />;
-      case 'ProfileEdit':
-        return <ProfileEditScreen {...screenProps} />;
-      case 'AddCard':
-        return <AddCardScreen {...screenProps} />;
-      default:
-        return <HomeScreen {...screenProps} />;
-    }
-  }, [currentScreen, navigation]);
+    return (
+      <>
+        {mountedScreens.has('Home') && (
+          <View style={[styles.screen, currentScreen === 'Home' ? styles.activeScreen : styles.hiddenScreen]}>
+            <HomeScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('Search') && (
+          <View style={[styles.screen, currentScreen === 'Search' ? styles.activeScreen : styles.hiddenScreen]}>
+            <SearchScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('SearchResults') && (
+          <View style={[styles.screen, currentScreen === 'SearchResults' ? styles.activeScreen : styles.hiddenScreen]}>
+            <SearchResultsScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('Favorites') && (
+          <View style={[styles.screen, currentScreen === 'Favorites' ? styles.activeScreen : styles.hiddenScreen]}>
+            <FavoritesScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('RecipeDetail') && (
+          <View style={[styles.screen, currentScreen === 'RecipeDetail' ? styles.activeScreen : styles.hiddenScreen]}>
+            <RecipeDetailScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('Profile') && (
+          <View style={[styles.screen, currentScreen === 'Profile' ? styles.activeScreen : styles.hiddenScreen]}>
+            <ProfileScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('Chat') && (
+          <View style={[styles.screen, currentScreen === 'Chat' ? styles.activeScreen : styles.hiddenScreen]}>
+            <ChatScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('CookingSteps') && (
+          <View style={[styles.screen, currentScreen === 'CookingSteps' ? styles.activeScreen : styles.hiddenScreen]}>
+            <CookingStepsScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('PaymentMethods') && (
+          <View style={[styles.screen, currentScreen === 'PaymentMethods' ? styles.activeScreen : styles.hiddenScreen]}>
+            <PaymentMethodsScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('PrivacyPolicy') && (
+          <View style={[styles.screen, currentScreen === 'PrivacyPolicy' ? styles.activeScreen : styles.hiddenScreen]}>
+            <PrivacyPolicyScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('TermsOfService') && (
+          <View style={[styles.screen, currentScreen === 'TermsOfService' ? styles.activeScreen : styles.hiddenScreen]}>
+            <TermsOfServiceScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('HelpSupport') && (
+          <View style={[styles.screen, currentScreen === 'HelpSupport' ? styles.activeScreen : styles.hiddenScreen]}>
+            <HelpSupportScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('ProfileEdit') && (
+          <View style={[styles.screen, currentScreen === 'ProfileEdit' ? styles.activeScreen : styles.hiddenScreen]}>
+            <ProfileEditScreen {...screenProps} />
+          </View>
+        )}
+        {mountedScreens.has('AddCard') && (
+          <View style={[styles.screen, currentScreen === 'AddCard' ? styles.activeScreen : styles.hiddenScreen]}>
+            <AddCardScreen {...screenProps} />
+          </View>
+        )}
+      </>
+    );
+  }, [currentScreen, navigation, mountedScreens]);
 
   return (
     <SafeAreaProvider>
       <View style={styles.container}>
         <StatusBar style="dark" backgroundColor={COLORS.background} />
-        {renderScreen()}
+        {renderAllScreens()}
       </View>
     </SafeAreaProvider>
   );
@@ -113,6 +157,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  screen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  activeScreen: {
+    zIndex: 1,
+  },
+  hiddenScreen: {
+    zIndex: 0,
   },
 });
 
