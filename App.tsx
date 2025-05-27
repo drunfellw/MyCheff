@@ -4,9 +4,13 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import HomeScreen from './src/screens/HomeScreen';
 import SearchScreen from './src/screens/SearchScreen';
+import SearchResultsScreen from './src/screens/SearchResultsScreen';
+import FavoritesScreen from './src/screens/FavoritesScreen';
+import RecipeDetailScreen from './src/screens/RecipeDetailScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 import { COLORS } from './src/constants';
 
-type Screen = 'Home' | 'Search';
+type Screen = 'Home' | 'Search' | 'SearchResults' | 'Favorites' | 'RecipeDetail' | 'Profile';
 
 /**
  * Main App Component
@@ -18,8 +22,8 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('Home');
 
   const navigation = {
-    navigate: (screen: Screen) => {
-      setCurrentScreen(screen);
+    navigate: (screen: string) => {
+      setCurrentScreen(screen as Screen);
     },
     goBack: () => {
       setCurrentScreen('Home');
@@ -28,9 +32,18 @@ export default function App() {
 
   const renderScreen = () => {
     switch (currentScreen) {
+      case 'Home':
+        return <HomeScreen navigation={navigation} />;
       case 'Search':
         return <SearchScreen navigation={navigation} />;
-      case 'Home':
+      case 'SearchResults':
+        return <SearchResultsScreen navigation={navigation} />;
+      case 'Favorites':
+        return <FavoritesScreen navigation={navigation} />;
+      case 'RecipeDetail':
+        return <RecipeDetailScreen navigation={navigation} />;
+      case 'Profile':
+        return <ProfileScreen navigation={navigation} />;
       default:
         return <HomeScreen navigation={navigation} />;
     }

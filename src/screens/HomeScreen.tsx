@@ -13,7 +13,15 @@ import RecipeCard from '../components/RecipeCard';
 import NavigationBar from '../components/NavigationBar';
 import { COLORS, SPACING, FONT_SIZE, DEFAULTS } from '../constants';
 import { CATEGORIES_DATA } from '../services/mockData';
-import type { Recipe } from '../types';
+interface Recipe {
+  id: string;
+  title?: string;
+  time?: string;
+  category?: string;
+  image?: string;
+  rating?: string;
+  isFavorite?: boolean;
+}
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -40,7 +48,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       time: '3 min',
       category: 'Beverages',
       image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=300&h=200&fit=crop',
-      rating: 4.8,
+      rating: '4.8',
       isFavorite: false,
     },
     {
@@ -49,7 +57,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       time: '15 min',
       category: 'Breakfast',
       image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=300&h=200&fit=crop',
-      rating: 4.9,
+      rating: '4.9',
       isFavorite: true,
     },
     {
@@ -58,7 +66,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       time: '5 min', 
       category: 'Breakfast',
       image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=300&h=200&fit=crop',
-      rating: 4.7,
+      rating: '4.7',
       isFavorite: false,
     },
     {
@@ -67,7 +75,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       time: '8 min',
       category: 'Breakfast', 
       image: 'https://images.unsplash.com/photo-1582169296194-754c5a464303?w=300&h=200&fit=crop',
-      rating: 4.6,
+      rating: '4.6',
       isFavorite: false,
     },
     {
@@ -76,7 +84,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       time: '2 min',
       category: 'Beverages',
       image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433a?w=300&h=200&fit=crop', 
-      rating: 4.8,
+      rating: '4.8',
       isFavorite: true,
     },
     {
@@ -85,7 +93,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       time: '5 min',
       category: 'Breakfast',
       image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=300&h=200&fit=crop',
-      rating: 4.5,
+      rating: '4.5',
       isFavorite: false,
     }
   ]);
@@ -99,8 +107,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const cardWidth = availableWidth / numColumns;
 
   const handleSearchPress = (): void => {
-    // SearchScreen'e yönlendir
-    navigation?.navigate('Search');
+    // SearchResultsScreen'e yönlendir
+    navigation?.navigate('SearchResults');
   };
 
   const handleCategorySelect = (categoryId: string): void => {
@@ -109,6 +117,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   const handleRecipePress = (recipe: Recipe): void => {
+    navigation?.navigate('RecipeDetail');
     console.log('Recipe pressed:', recipe.title);
   };
 
@@ -125,7 +134,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const handleTabPress = (tabId: string): void => {
     setActiveTab(tabId);
-    console.log('Tab pressed:', tabId);
+    
+    // Navigation logic
+    switch (tabId) {
+      case 'home':
+        // Already on home screen
+        break;
+      case 'search':
+        navigation?.navigate('SearchResults');
+        break;
+      case 'favorites':
+        navigation?.navigate('Favorites');
+        break;
+      case 'profile':
+        navigation?.navigate('Profile');
+        break;
+      default:
+        console.log('Unknown tab pressed:', tabId);
+    }
   };
 
   // Seçili kategoriye göre inspiration text
@@ -134,7 +160,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const inspirationText = `${DEFAULTS.INSPIRATION_TEXT.COUNT} types of ${categoryName} ${DEFAULTS.INSPIRATION_TEXT.SUFFIX}`;
 
   const renderRecipeGrid = () => {
-    const rows = [];
+    const rows: React.ReactElement[] = [];
     
     for (let i = 0; i < recipes.length; i += numColumns) {
       const rowRecipes = recipes.slice(i, i + numColumns);

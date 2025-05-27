@@ -218,6 +218,13 @@ export interface SearchFilters {
   ingredients?: string[];
 }
 
+export interface FilterOptions {
+  categories: string[];
+  difficulty: string[];
+  cookingTime: string[];
+  dietary: string[];
+}
+
 export interface SearchResult {
   recipes: Recipe[];
   totalCount: number;

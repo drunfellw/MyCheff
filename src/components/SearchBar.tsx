@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS, DEFAULTS } from '../constants';
+import FilterModal from './FilterModal';
 
 interface SearchBarProps {
   onPress?: () => void;
+  onFiltersApplied?: (filters: any) => void;
   style?: ViewStyle;
 }
 
@@ -17,10 +19,11 @@ interface SearchBarProps {
  * 
  * @param {SearchBarProps} props - Component props
  */
-const SearchBar = ({ onPress, style }: SearchBarProps): React.JSX.Element => {
+const SearchBar = ({ onPress, onFiltersApplied, style }: SearchBarProps): React.JSX.Element => {
   const [displayText, setDisplayText] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [typeIndex, setTypeIndex] = useState<number>(0);
+  const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
   
   const typewriterTexts: string[] = [
     'Search recipes by what you have',
@@ -86,7 +89,7 @@ const SearchBar = ({ onPress, style }: SearchBarProps): React.JSX.Element => {
       {/* Sağ taraftaki filter butonu */}
       <TouchableOpacity 
         style={styles.filterButton}
-        onPress={() => console.log('Filter pressed')}
+        onPress={() => setShowFilterModal(true)}
         activeOpacity={0.7}
       >
         <View style={styles.filterIconContainer}>
@@ -97,6 +100,16 @@ const SearchBar = ({ onPress, style }: SearchBarProps): React.JSX.Element => {
           />
         </View>
       </TouchableOpacity>
+
+      {/* Filter Modal */}
+      <FilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onApplyFilters={(filters) => {
+          onFiltersApplied?.(filters);
+          console.log('Filters applied:', filters);
+        }}
+      />
     </TouchableOpacity>
   );
 };

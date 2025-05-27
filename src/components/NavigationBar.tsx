@@ -21,10 +21,10 @@ interface NavigationBarProps {
  */
 const NavigationBar = ({ activeTab = 'home', onTabPress }: NavigationBarProps) => {
   const tabs: Tab[] = [
-    { id: 'home', label: 'Search', icon: 'home' },
+    { id: 'home', label: 'Home', icon: 'home' },
     { id: 'search', label: 'Search', icon: 'search' },
-    { id: 'favorites', label: 'Favorite', icon: 'heart' },
-    { id: 'profile', label: 'Settings', icon: 'person' },
+    { id: 'favorites', label: 'Favorites', icon: 'heart' },
+    { id: 'profile', label: 'Profile', icon: 'person' },
   ];
 
   const renderTab = (tab: Tab) => {

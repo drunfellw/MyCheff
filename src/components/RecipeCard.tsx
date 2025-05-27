@@ -20,6 +20,8 @@ interface RecipeCardProps {
   recipe: Recipe;
   onPress?: (recipe: Recipe) => void;
   onFavoritePress?: (recipeId: string) => void;
+  isSelected?: boolean;
+  isSelectionMode?: boolean;
 }
 
 /**
@@ -27,7 +29,7 @@ interface RecipeCardProps {
  * 
  * Modern, profesyonel recipe kartı - Airbnb HostCard'ına benzer
  */
-const RecipeCard = ({ recipe, onPress, onFavoritePress }: RecipeCardProps) => {
+const RecipeCard = ({ recipe, onPress, onFavoritePress, isSelected = false, isSelectionMode = false }: RecipeCardProps) => {
   const defaultImage = 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=300&fit=crop';
   
   // Kart genişliği hesaplama - 2 kartlı grid için
@@ -37,19 +39,19 @@ const RecipeCard = ({ recipe, onPress, onFavoritePress }: RecipeCardProps) => {
 
   return (
     <TouchableOpacity 
-      style={[styles.container, { width: cardWidth }]} 
+      style={[styles.container, { width: cardWidth }, isSelected && styles.selectedContainer]} 
       onPress={() => onPress?.(recipe)}
       activeOpacity={0.95}
     >
       {/* Recipe Image Container - Sadece fotoğraf kart */}
-      <View style={styles.imageContainer}>
+      <View style={[styles.imageContainer, isSelected && styles.selectedImageContainer]}>
         <Image
           source={{ uri: recipe.image || defaultImage }}
           style={styles.image}
           resizeMode="cover"
         />
         
-        {/* Favorite Button */}
+        {/* Favorite/Selection Button */}
         <TouchableOpacity
           style={styles.favoriteButton}
           onPress={(e) => {
@@ -58,11 +60,19 @@ const RecipeCard = ({ recipe, onPress, onFavoritePress }: RecipeCardProps) => {
           }}
           activeOpacity={0.8}
         >
-          <Ionicons
-            name={recipe.isFavorite ? "heart" : "heart-outline"}
-            size={22}
-            color={recipe.isFavorite ? COLORS.primary : COLORS.white}
-          />
+          {isSelectionMode ? (
+            <Ionicons
+              name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+              size={22}
+              color={isSelected ? COLORS.primary : COLORS.white}
+            />
+          ) : (
+            <Ionicons
+              name={recipe.isFavorite ? "heart" : "heart-outline"}
+              size={22}
+              color={recipe.isFavorite ? COLORS.primary : COLORS.white}
+            />
+          )}
         </TouchableOpacity>
 
         {/* Time Badge */}
@@ -98,6 +108,9 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'transparent',
   },
+  selectedContainer: {
+    opacity: 0.8,
+  },
   imageContainer: {
     position: 'relative',
     width: '100%',
@@ -106,6 +119,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: COLORS.white,
     ...SHADOW_PRESETS.MEDIUM,
+  },
+  selectedImageContainer: {
+    borderWidth: 3,
+    borderColor: COLORS.primary,
   },
   image: {
     width: '100%',
