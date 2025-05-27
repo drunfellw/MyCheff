@@ -10,9 +10,15 @@ import RecipeDetailScreen from './src/screens/RecipeDetailScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import CookingStepsScreen from './src/screens/CookingStepsScreen';
+import PaymentMethodsScreen from './src/screens/PaymentMethodsScreen';
+import PrivacyPolicyScreen from './src/screens/PrivacyPolicyScreen';
+import TermsOfServiceScreen from './src/screens/TermsOfServiceScreen';
+import HelpSupportScreen from './src/screens/HelpSupportScreen';
+import ProfileEditScreen from './src/screens/ProfileEditScreen';
+import AddCardScreen from './src/screens/AddCardScreen';
 import { COLORS } from './src/constants';
 
-type Screen = 'Home' | 'Search' | 'SearchResults' | 'Favorites' | 'RecipeDetail' | 'Profile' | 'Chat' | 'CookingSteps';
+type Screen = 'Home' | 'Search' | 'SearchResults' | 'Favorites' | 'RecipeDetail' | 'Profile' | 'Chat' | 'CookingSteps' | 'PaymentMethods' | 'PrivacyPolicy' | 'TermsOfService' | 'HelpSupport' | 'ProfileEdit' | 'AddCard';
 
 interface NavigationParams {
   [key: string]: any;
@@ -74,6 +80,18 @@ const App = React.memo(() => {
         return <ChatScreen {...screenProps} />;
       case 'CookingSteps':
         return <CookingStepsScreen {...screenProps} />;
+      case 'PaymentMethods':
+        return <PaymentMethodsScreen {...screenProps} />;
+      case 'PrivacyPolicy':
+        return <PrivacyPolicyScreen {...screenProps} />;
+      case 'TermsOfService':
+        return <TermsOfServiceScreen {...screenProps} />;
+      case 'HelpSupport':
+        return <HelpSupportScreen {...screenProps} />;
+      case 'ProfileEdit':
+        return <ProfileEditScreen {...screenProps} />;
+      case 'AddCard':
+        return <AddCardScreen {...screenProps} />;
       default:
         return <HomeScreen {...screenProps} />;
     }

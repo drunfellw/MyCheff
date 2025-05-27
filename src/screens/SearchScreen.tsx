@@ -7,7 +7,6 @@ import {
   FlatList,
   StyleSheet,
   SafeAreaView,
-  KeyboardAvoidingView,
   Platform,
   Animated,
   Dimensions,
@@ -15,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { NavigationBar } from '../components';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -41,7 +41,7 @@ interface SearchScreenProps {
  * Minimal design with focus on user experience
  */
 const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedIngredients, setSelectedIngredients] = useState<Ingredient[]>([]);
   const [searchResults, setSearchResults] = useState<Ingredient[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -50,15 +50,6 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const searchInputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  // Keep keyboard closed on screen load
-  useEffect(() => {
-    Keyboard.dismiss();
-    // Prevent auto-focus
-    if (searchInputRef.current) {
-      searchInputRef.current.blur();
-    }
-  }, []);
 
   // Mock data - Backend'den gelecek
   const mockIngredients: Ingredient[] = useMemo(() => [
@@ -143,28 +134,30 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
   }, []);
 
   // Search recipes with selected ingredients
-  const handleSearchRecipes = useCallback(async () => {
-    if (selectedIngredients.length === 0) return;
-
-    try {
-      // TODO: Replace with actual API call
-      // const response = await recipeService.searchByIngredients(selectedIngredients);
-      // navigation?.navigate('SearchResults', { recipes: response.data });
-      
-      console.log('Searching recipes with:', selectedIngredients);
-      // Mock navigation for now
-      
-    } catch (error) {
-      console.error('Recipe search error:', error);
+  const handleSearchRecipes = useCallback(() => {
+    if (selectedIngredients.length > 0) {
+      navigation?.navigate('SearchResults', { 
+        ingredients: selectedIngredients.map(i => i.name)
+      });
     }
-  }, [selectedIngredients]);
+  }, [selectedIngredients, navigation]);
 
-  // Clear all selections
-  const handleClearAll = useCallback(() => {
-    setSelectedIngredients([]);
-    setSearchQuery('');
-    setShowResults(false);
-  }, []);
+  const handleTabPress = useCallback((tabId: string) => {
+    switch (tabId) {
+      case 'home':
+        navigation?.navigate('Home');
+        break;
+      case 'search':
+        // Already on search screen
+        break;
+      case 'favorites':
+        navigation?.navigate('Favorites');
+        break;
+      case 'profile':
+        navigation?.navigate('Profile');
+        break;
+    }
+  }, [navigation]);
 
   // Render search result item
   const renderSearchResult = useCallback(({ item }: { item: Ingredient }) => (
@@ -177,92 +170,60 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
         <Text style={styles.resultName}>{item.name}</Text>
         <Text style={styles.resultCategory}>{item.category}</Text>
       </View>
-      <Ionicons name="add-circle-outline" size={24} color={COLORS.textSecondary} />
+      <Ionicons name="add-circle-outline" size={24} color={COLORS.primary} />
     </TouchableOpacity>
   ), [handleSelectIngredient]);
 
-  // Render selected ingredient chip
-  const renderSelectedChip = useCallback(({ item }: { item: Ingredient }) => (
-    <View style={styles.selectedChip}>
-      <Text style={styles.chipText}>{item.name}</Text>
-      <TouchableOpacity
-        onPress={() => handleRemoveIngredient(item.id)}
-        style={styles.chipRemove}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Ionicons name="close" size={16} color={COLORS.textMuted} />
-      </TouchableOpacity>
-    </View>
-  ), [handleRemoveIngredient]);
-
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <KeyboardAvoidingView 
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={insets.top}
-      >
-        {/* Header with SearchBar Style */}
-        <View style={[styles.header, { paddingTop: SPACING.sm }]}>
-          <View style={styles.searchBarContainer}>
-            {/* Back Button */}
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => navigation?.goBack()}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-            </TouchableOpacity>
-
-            {/* Search Input */}
-            <View style={styles.searchBarInput}>
-              <TextInput
-                ref={searchInputRef}
-                style={styles.searchInput}
-                placeholder="Search ingredients..."
-                placeholderTextColor={COLORS.textMuted}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                autoCapitalize="words"
-                autoCorrect={false}
-                autoFocus={false}
-                returnKeyType="search"
-                blurOnSubmit={false}
-              />
-              
-              {isLoading ? (
-                <View style={styles.loadingContainer}>
-                  <Ionicons name="hourglass" size={20} color={COLORS.textMuted} />
-                </View>
-              ) : (
-                <TouchableOpacity 
-                  style={styles.filterButtonInside}
-                  onPress={() => {/* TODO: Filter modal */}}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <View style={styles.filterIconContainer}>
-                    <Ionicons name="options" size={20} color={COLORS.textPrimary} />
-                  </View>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-
-          {/* Selected Count */}
+      <View style={styles.content}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Search Recipes</Text>
           {selectedIngredients.length > 0 && (
-            <View style={styles.selectedCountContainer}>
-              <Text style={styles.selectedCountText}>
-                {selectedIngredients.length} ingredient{selectedIngredients.length > 1 ? 's' : ''} selected
-              </Text>
+            <TouchableOpacity 
+              style={styles.searchButton}
+              onPress={handleSearchRecipes}
+            >
+              <Text style={styles.searchButtonText}>Search</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Search Input */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={20} color={COLORS.textMuted} />
+            <TextInput
+              ref={searchInputRef}
+              style={styles.input}
+              placeholder="Search ingredients..."
+              placeholderTextColor={COLORS.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="words"
+              autoCorrect={false}
+              autoFocus={false}
+              returnKeyType="search"
+              blurOnSubmit={false}
+            />
+            
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <Ionicons name="hourglass" size={20} color={COLORS.textMuted} />
+              </View>
+            ) : (
               <TouchableOpacity 
-                style={styles.clearButton}
-                onPress={handleClearAll}
+                style={styles.filterButtonInside}
+                onPress={() => {/* TODO: Filter modal */}}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={styles.clearText}>Clear</Text>
+                <View style={styles.filterIconContainer}>
+                  <Ionicons name="options" size={20} color={COLORS.textPrimary} />
+                </View>
               </TouchableOpacity>
-            </View>
-          )}
+            )}
+          </View>
         </View>
 
         {/* Selected Ingredients */}
@@ -270,7 +231,15 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
           <View style={styles.selectedSection}>
             <FlatList
               data={selectedIngredients}
-              renderItem={renderSelectedChip}
+              renderItem={({ item }) => (
+                <TouchableOpacity 
+                  style={styles.selectedItem} 
+                  onPress={() => handleRemoveIngredient(item.id)}
+                >
+                  <Text style={styles.selectedText}>{item.name}</Text>
+                  <Ionicons name="close" size={16} color={COLORS.error} />
+                </TouchableOpacity>
+              )}
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -280,54 +249,40 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
           </View>
         )}
 
-        {/* Main Content */}
-        <View style={styles.mainContent}>
-          {/* Search Results */}
-          {showResults && (
-            <Animated.View style={[styles.resultsContainer, { opacity: fadeAnim }]}>
-              <FlatList
-                data={searchResults}
-                renderItem={renderSearchResult}
-                keyExtractor={(item) => item.id}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.resultsList}
-                ListEmptyComponent={
-                  <View style={styles.emptyState}>
-                    <Ionicons name="search" size={48} color={COLORS.textMuted} />
-                    <Text style={styles.emptyText}>No ingredients found</Text>
-                    <Text style={styles.emptySubtext}>Try a different search term</Text>
-                  </View>
-                }
-              />
-            </Animated.View>
-          )}
+        {/* Search Results */}
+        {showResults && (
+          <Animated.View style={[styles.resultsContainer, { opacity: fadeAnim }]}>
+            <FlatList
+              data={searchResults}
+              renderItem={renderSearchResult}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.resultsList}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Ionicons name="search" size={48} color={COLORS.textMuted} />
+                  <Text style={styles.emptyText}>No ingredients found</Text>
+                  <Text style={styles.emptySubtext}>Try a different search term</Text>
+                </View>
+              }
+            />
+          </Animated.View>
+        )}
 
-          {/* Empty State */}
-          {!showResults && selectedIngredients.length === 0 && (
-            <View style={styles.welcomeState}>
-              <Ionicons name="restaurant-outline" size={64} color={COLORS.textMuted} />
-              <Text style={styles.welcomeTitle}>Find Your Perfect Recipe</Text>
-              <Text style={styles.welcomeSubtitle}>
-                Search and select ingredients you have available to discover amazing recipes
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Find Recipes Button */}
-        {selectedIngredients.length > 0 && (
-          <View style={[styles.bottomButtonContainer, { paddingBottom: insets.bottom + SPACING.md }]}>
-            <TouchableOpacity
-              style={styles.searchButton}
-              onPress={handleSearchRecipes}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="restaurant" size={20} color={COLORS.white} />
-              <Text style={styles.searchButtonText}>Find Recipes</Text>
-            </TouchableOpacity>
+        {/* Empty State */}
+        {!showResults && selectedIngredients.length === 0 && (
+          <View style={styles.welcomeState}>
+            <Ionicons name="restaurant-outline" size={64} color={COLORS.textMuted} />
+            <Text style={styles.welcomeTitle}>Find Your Perfect Recipe</Text>
+            <Text style={styles.welcomeSubtitle}>
+              Search and select ingredients you have available to discover amazing recipes
+            </Text>
           </View>
         )}
-      </KeyboardAvoidingView>
+      </View>
+      
+      {/* Navigation Bar - Always at bottom */}
+      <NavigationBar activeTab="search" onTabPress={handleTabPress} />
     </SafeAreaView>
   );
 };
@@ -337,133 +292,79 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  keyboardView: {
+  content: {
     flex: 1,
   },
   header: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.lg,
-    gap: SPACING.md,
-  },
-  searchBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.CIRCLE,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...SHADOW_PRESETS.SMALL,
-  },
-  searchBarInput: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.ROUND,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    gap: SPACING.md,
-    ...SHADOW_PRESETS.MEDIUM,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: FONT_SIZE.MD,
-    color: COLORS.textPrimary,
-    paddingVertical: 0,
-  },
-  filterButtonInside: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: BORDER_RADIUS.CIRCLE,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingContainer: {
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  selectedCountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.background,
-    borderRadius: BORDER_RADIUS.LG,
+    padding: SPACING.md,
+  },
+  title: {
+    fontSize: FONT_SIZE.XL,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  searchButton: {
+    backgroundColor: COLORS.primary,
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.ROUND,
   },
-  selectedCountText: {
-    fontSize: FONT_SIZE.SM,
-    color: COLORS.textMuted,
-    fontWeight: '500',
-  },
-  clearButton: {
-    padding: SPACING.sm,
-  },
-  clearText: {
+  searchButtonText: {
+    color: COLORS.white,
     fontSize: FONT_SIZE.MD,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  selectedSection: {
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+  searchContainer: {
+    padding: SPACING.md,
   },
-  selectedList: {
-    paddingHorizontal: SPACING.lg,
-  },
-  selectedChip: {
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.ROUND,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingVertical: Platform.OS === 'ios' ? SPACING.sm : SPACING.xs,
     gap: SPACING.sm,
-    ...SHADOW_PRESETS.SMALL,
   },
-  chipText: {
+  input: {
+    flex: 1,
+    fontSize: FONT_SIZE.MD,
+    color: COLORS.textPrimary,
+    padding: 0,
+  },
+  selectedList: {
+    padding: SPACING.md,
+    gap: SPACING.sm,
+  },
+  selectedItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.ROUND,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    marginRight: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  selectedText: {
     fontSize: FONT_SIZE.SM,
     color: COLORS.textPrimary,
-    fontWeight: '500',
-  },
-  chipRemove: {
-    padding: SPACING.xs,
-  },
-  mainContent: {
-    flex: 1,
-  },
-  resultsContainer: {
-    flex: 1,
   },
   resultsList: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
+    paddingBottom: 100, // NavigationBar için extra padding
   },
   resultItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.LG,
-    padding: SPACING.lg,
-    marginBottom: SPACING.md,
-    ...SHADOW_PRESETS.SMALL,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   resultContent: {
     flex: 1,
@@ -472,7 +373,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.MD,
     fontWeight: '500',
     color: COLORS.textPrimary,
-    marginBottom: SPACING.xs,
+    marginBottom: 2,
   },
   resultCategory: {
     fontSize: FONT_SIZE.SM,
@@ -515,26 +416,36 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  bottomButtonContainer: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.lg,
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  searchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  loadingContainer: {
+    width: 20,
+    height: 20,
     justifyContent: 'center',
-    backgroundColor: COLORS.textPrimary,
-    borderRadius: BORDER_RADIUS.LG,
-    paddingVertical: SPACING.lg,
-    gap: SPACING.sm,
+    alignItems: 'center',
+    marginTop: 2,
   },
-  searchButtonText: {
-    fontSize: FONT_SIZE.LG,
-    fontWeight: '600',
-    color: COLORS.white,
+  filterButtonInside: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: BORDER_RADIUS.CIRCLE,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedSection: {
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  resultsContainer: {
+    flex: 1,
   },
 });
 

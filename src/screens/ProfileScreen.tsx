@@ -51,7 +51,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState<string>('profile');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
-  const [emailNotifications, setEmailNotifications] = useState<boolean>(true);
 
   // Mock user data - Backend'den gelecek
   const [userInfo] = useState<UserInfo>({
@@ -102,9 +101,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   }, [navigation]);
 
   const handleEditProfile = useCallback(() => {
-    // TODO: Navigate to edit profile screen
-    Alert.alert('Edit Profile', 'Edit profile functionality coming soon!');
-  }, []);
+    navigation?.navigate('ProfileEdit');
+  }, [navigation]);
 
   const handleUpgradeToPremium = useCallback(() => {
     // TODO: Navigate to premium upgrade screen
@@ -121,9 +119,20 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   }, []);
 
   const handleLegalDocument = useCallback((document: string) => {
-    // TODO: Navigate to legal document screen
-    Alert.alert('Legal Document', `${document} will be displayed here.`);
-  }, []);
+    switch (document) {
+      case 'Privacy Policy':
+        navigation?.navigate('PrivacyPolicy');
+        break;
+      case 'Terms of Service':
+        navigation?.navigate('TermsOfService');
+        break;
+      case 'Help & Support':
+        navigation?.navigate('HelpSupport');
+        break;
+      default:
+        Alert.alert('Legal Document', `${document} will be displayed here.`);
+    }
+  }, [navigation]);
 
   const handleLogout = useCallback(() => {
     Alert.alert(
@@ -331,22 +340,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           thumbColor={COLORS.white}
         />
       </View>
-      
-      {/* Email Notifications */}
-      <View style={styles.settingItem}>
-        <View style={styles.settingInfo}>
-          <Ionicons name="mail" size={24} color={COLORS.textSecondary} />
-          <Text style={styles.settingText}>Email Notifications</Text>
-        </View>
-        <Switch
-          value={emailNotifications}
-          onValueChange={setEmailNotifications}
-          trackColor={{ false: COLORS.border, true: COLORS.primary }}
-          thumbColor={COLORS.white}
-        />
-      </View>
     </View>
-  ), [isDarkMode, notificationsEnabled, emailNotifications]);
+  ), [isDarkMode, notificationsEnabled]);
 
   const renderLegalSection = useCallback(() => (
     <View style={styles.section}>
@@ -387,9 +382,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   ), [handleLegalDocument, handleLogout]);
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        {/* Header */}
+        <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation?.goBack()}
@@ -421,11 +417,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       </ScrollView>
 
       {/* Navigation Bar */}
-      <NavigationBar
-        activeTab={activeTab}
-        onTabPress={handleTabPress}
-      />
-    </SafeAreaView>
+        <NavigationBar
+          activeTab={activeTab}
+          onTabPress={handleTabPress}
+        />
+      </SafeAreaView>
+    </View>
   );
 };
 
@@ -433,6 +430,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  safeArea: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

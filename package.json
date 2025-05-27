@@ -29,6 +29,7 @@
   "dependencies": {
     "@expo/vector-icons": "^14.0.0",
     "expo": "^53.0.0",
+    "expo-blur": "^14.1.4",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
     "react-native": "0.79.2",
@@ -64,7 +65,10 @@
   "expo": {
     "doctor": {
       "reactNativeDirectoryCheck": {
-        "exclude": ["react-native-responsive-dimensions", "react-native-vector-icons"]
+        "exclude": [
+          "react-native-responsive-dimensions",
+          "react-native-vector-icons"
+        ]
       }
     }
   }
