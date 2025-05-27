@@ -116,7 +116,7 @@ export const COMPONENT_SPACING = {
   },
 } as const;
 
-// Typography
+// Typography System - Airbnb Style Professional Design
 export const FONT_FAMILY = {
   REGULAR: 'Inter_400Regular',
   MEDIUM: 'Inter_500Medium',
@@ -124,29 +124,225 @@ export const FONT_FAMILY = {
   BOLD: 'Inter_700Bold',
 } as const;
 
+// Font Sizes - Semantic Naming with Airbnb Standards
 export const FONT_SIZE = {
-  XS: normalize(10),
-  SM: normalize(12),
-  MD: normalize(14),
-  LG: normalize(16),
-  XL: normalize(18),
-  XXL: normalize(20),
-  XXXL: normalize(24),
-  TITLE: normalize(28),
-  LARGE_TITLE: normalize(32),
-  COOKING_STEP: normalize(18), // Step-by-step için özel boyut
+  // Display Sizes - For hero sections and large titles
+  DISPLAY_LARGE: normalize(40),    // Hero titles, landing pages
+  DISPLAY_MEDIUM: normalize(36),   // Section headers
+  DISPLAY_SMALL: normalize(32),    // Page titles
+  
+  // Heading Sizes - For content hierarchy
+  HEADING_1: normalize(28),        // Main page headings
+  HEADING_2: normalize(24),        // Section headings
+  HEADING_3: normalize(20),        // Subsection headings
+  HEADING_4: normalize(18),        // Card titles, important labels
+  
+  // Body Text Sizes - For content and UI
+  BODY_LARGE: normalize(16),       // Primary body text, important content
+  BODY_MEDIUM: normalize(14),      // Standard body text, descriptions
+  BODY_SMALL: normalize(12),       // Secondary text, captions
+  
+  // UI Component Sizes - For interface elements
+  BUTTON_LARGE: normalize(16),     // Primary buttons
+  BUTTON_MEDIUM: normalize(14),    // Secondary buttons
+  BUTTON_SMALL: normalize(12),     // Small buttons, chips
+  
+  LABEL_LARGE: normalize(14),      // Form labels, important labels
+  LABEL_MEDIUM: normalize(12),     // Standard labels
+  LABEL_SMALL: normalize(10),      // Small labels, badges
+  
+  // Navigation & Tab Sizes
+  TAB_LABEL: normalize(11),        // Bottom navigation labels
+  NAVIGATION_TITLE: normalize(17), // Navigation bar titles
+  
+  // Special Use Cases
+  CAPTION: normalize(10),          // Image captions, fine print
+  OVERLINE: normalize(10),         // Category labels, overlines
+  
+  // Backward Compatibility - Legacy sizes (will be deprecated)
+  XS: normalize(10),    // Use CAPTION instead
+  SM: normalize(12),    // Use BODY_SMALL instead
+  MD: normalize(14),    // Use BODY_MEDIUM instead
+  LG: normalize(16),    // Use BODY_LARGE instead
+  XL: normalize(18),    // Use HEADING_4 instead
+  XXL: normalize(20),   // Use HEADING_3 instead
+  XXXL: normalize(24),  // Use HEADING_2 instead
+  TITLE: normalize(28), // Use HEADING_1 instead
+  LARGE_TITLE: normalize(32), // Use DISPLAY_SMALL instead
 } as const;
 
+// Line Heights - Optimized for readability
 export const LINE_HEIGHT = {
-  XS: 12,
-  SM: 14,
-  MD: 16,
-  LG: 18,
-  XL: 20,
-  XXL: 22,
-  XXXL: 26,
-  TITLE: 32,
-  LARGE_TITLE: 36,
+  // Display Line Heights
+  DISPLAY_LARGE: 48,
+  DISPLAY_MEDIUM: 44,
+  DISPLAY_SMALL: 40,
+  
+  // Heading Line Heights
+  HEADING_1: 36,
+  HEADING_2: 32,
+  HEADING_3: 28,
+  HEADING_4: 24,
+  
+  // Body Line Heights
+  BODY_LARGE: 24,
+  BODY_MEDIUM: 20,
+  BODY_SMALL: 16,
+  
+  // UI Component Line Heights
+  BUTTON_LARGE: 24,
+  BUTTON_MEDIUM: 20,
+  BUTTON_SMALL: 16,
+  
+  LABEL_LARGE: 20,
+  LABEL_MEDIUM: 16,
+  LABEL_SMALL: 14,
+  
+  // Navigation Line Heights
+  TAB_LABEL: 14,
+  NAVIGATION_TITLE: 24,
+  
+  // Special Line Heights
+  CAPTION: 14,
+  OVERLINE: 14,
+} as const;
+
+// Typography Presets - Ready-to-use text styles
+export const TEXT_STYLES = {
+  // Display Styles
+  displayLarge: {
+    fontSize: FONT_SIZE.DISPLAY_LARGE,
+    lineHeight: LINE_HEIGHT.DISPLAY_LARGE,
+    fontFamily: FONT_FAMILY.BOLD,
+    letterSpacing: -0.5,
+  },
+  displayMedium: {
+    fontSize: FONT_SIZE.DISPLAY_MEDIUM,
+    lineHeight: LINE_HEIGHT.DISPLAY_MEDIUM,
+    fontFamily: FONT_FAMILY.BOLD,
+    letterSpacing: -0.25,
+  },
+  displaySmall: {
+    fontSize: FONT_SIZE.DISPLAY_SMALL,
+    lineHeight: LINE_HEIGHT.DISPLAY_SMALL,
+    fontFamily: FONT_FAMILY.BOLD,
+    letterSpacing: 0,
+  },
+  
+  // Heading Styles
+  heading1: {
+    fontSize: FONT_SIZE.HEADING_1,
+    lineHeight: LINE_HEIGHT.HEADING_1,
+    fontFamily: FONT_FAMILY.SEMI_BOLD,
+    letterSpacing: -0.25,
+  },
+  heading2: {
+    fontSize: FONT_SIZE.HEADING_2,
+    lineHeight: LINE_HEIGHT.HEADING_2,
+    fontFamily: FONT_FAMILY.SEMI_BOLD,
+    letterSpacing: 0,
+  },
+  heading3: {
+    fontSize: FONT_SIZE.HEADING_3,
+    lineHeight: LINE_HEIGHT.HEADING_3,
+    fontFamily: FONT_FAMILY.MEDIUM,
+    letterSpacing: 0,
+  },
+  heading4: {
+    fontSize: FONT_SIZE.HEADING_4,
+    lineHeight: LINE_HEIGHT.HEADING_4,
+    fontFamily: FONT_FAMILY.MEDIUM,
+    letterSpacing: 0,
+  },
+  
+  // Body Styles
+  bodyLarge: {
+    fontSize: FONT_SIZE.BODY_LARGE,
+    lineHeight: LINE_HEIGHT.BODY_LARGE,
+    fontFamily: FONT_FAMILY.REGULAR,
+    letterSpacing: 0,
+  },
+  bodyMedium: {
+    fontSize: FONT_SIZE.BODY_MEDIUM,
+    lineHeight: LINE_HEIGHT.BODY_MEDIUM,
+    fontFamily: FONT_FAMILY.REGULAR,
+    letterSpacing: 0,
+  },
+  bodySmall: {
+    fontSize: FONT_SIZE.BODY_SMALL,
+    lineHeight: LINE_HEIGHT.BODY_SMALL,
+    fontFamily: FONT_FAMILY.REGULAR,
+    letterSpacing: 0,
+  },
+  
+  // Button Styles
+  buttonLarge: {
+    fontSize: FONT_SIZE.BUTTON_LARGE,
+    lineHeight: LINE_HEIGHT.BUTTON_LARGE,
+    fontFamily: FONT_FAMILY.MEDIUM,
+    letterSpacing: 0.25,
+  },
+  buttonMedium: {
+    fontSize: FONT_SIZE.BUTTON_MEDIUM,
+    lineHeight: LINE_HEIGHT.BUTTON_MEDIUM,
+    fontFamily: FONT_FAMILY.MEDIUM,
+    letterSpacing: 0.25,
+  },
+  buttonSmall: {
+    fontSize: FONT_SIZE.BUTTON_SMALL,
+    lineHeight: LINE_HEIGHT.BUTTON_SMALL,
+    fontFamily: FONT_FAMILY.MEDIUM,
+    letterSpacing: 0.25,
+  },
+  
+  // Label Styles
+  labelLarge: {
+    fontSize: FONT_SIZE.LABEL_LARGE,
+    lineHeight: LINE_HEIGHT.LABEL_LARGE,
+    fontFamily: FONT_FAMILY.MEDIUM,
+    letterSpacing: 0.1,
+  },
+  labelMedium: {
+    fontSize: FONT_SIZE.LABEL_MEDIUM,
+    lineHeight: LINE_HEIGHT.LABEL_MEDIUM,
+    fontFamily: FONT_FAMILY.MEDIUM,
+    letterSpacing: 0.1,
+  },
+  labelSmall: {
+    fontSize: FONT_SIZE.LABEL_SMALL,
+    lineHeight: LINE_HEIGHT.LABEL_SMALL,
+    fontFamily: FONT_FAMILY.MEDIUM,
+    letterSpacing: 0.1,
+  },
+  
+  // Navigation Styles
+  tabLabel: {
+    fontSize: FONT_SIZE.TAB_LABEL,
+    lineHeight: LINE_HEIGHT.TAB_LABEL,
+    fontFamily: FONT_FAMILY.MEDIUM,
+    letterSpacing: 0.1,
+  },
+  navigationTitle: {
+    fontSize: FONT_SIZE.NAVIGATION_TITLE,
+    lineHeight: LINE_HEIGHT.NAVIGATION_TITLE,
+    fontFamily: FONT_FAMILY.SEMI_BOLD,
+    letterSpacing: -0.1,
+  },
+  
+  // Special Styles
+  caption: {
+    fontSize: FONT_SIZE.CAPTION,
+    lineHeight: LINE_HEIGHT.CAPTION,
+    fontFamily: FONT_FAMILY.REGULAR,
+    letterSpacing: 0.1,
+  },
+  overline: {
+    fontSize: FONT_SIZE.OVERLINE,
+    lineHeight: LINE_HEIGHT.OVERLINE,
+    fontFamily: FONT_FAMILY.MEDIUM,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase' as const,
+  },
 } as const;
 
 // Navigation Tabs
@@ -294,4 +490,35 @@ export const DEFAULTS = {
     'What would you like to cook today?',
     'Find recipes with your ingredients',
   ],
+} as const;
+
+// Typography Usage Examples & Migration Guide
+export const TYPOGRAPHY_EXAMPLES = {
+  // How to use the new system:
+  // 
+  // OLD WAY (deprecated):
+  // fontSize: FONT_SIZE.MD,
+  // fontWeight: '500',
+  // lineHeight: 20,
+  //
+  // NEW WAY (recommended):
+  // ...TEXT_STYLES.bodyMedium
+  //
+  // Or for custom colors:
+  // ...TEXT_STYLES.bodyMedium,
+  // color: COLORS.primary
+  
+  // Common Use Cases:
+  pageTitle: { ...TEXT_STYLES.heading1 },
+  sectionHeader: { ...TEXT_STYLES.heading2 },
+  cardTitle: { ...TEXT_STYLES.heading4 },
+  bodyText: { ...TEXT_STYLES.bodyMedium },
+  caption: { ...TEXT_STYLES.caption },
+  buttonText: { ...TEXT_STYLES.buttonMedium },
+  tabLabel: { ...TEXT_STYLES.tabLabel },
+  
+  // With custom colors:
+  primaryButton: { ...TEXT_STYLES.buttonLarge, color: '#FFFFFF' },
+  errorText: { ...TEXT_STYLES.bodySmall, color: '#F44336' },
+  successText: { ...TEXT_STYLES.bodySmall, color: '#4CAF50' },
 } as const; 

@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { 
   COLORS, 
   SPACING, 
-  FONT_SIZE, 
+  TEXT_STYLES, 
   BORDER_RADIUS,
   SHADOW_PRESETS 
 } from '../constants';
@@ -99,8 +99,7 @@ const styles = StyleSheet.create({
     height: 40,
   },
   headerTitle: {
-    fontSize: FONT_SIZE.XL,
-    fontWeight: '700',
+    ...TEXT_STYLES.navigationTitle,
     color: COLORS.textPrimary,
     textAlign: 'center',
   },

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { 
   COLORS, 
   COMPONENT_SPACING, 
+  TEXT_STYLES,
   FONT_SIZE, 
   SHADOW_PRESETS,
   NAVIGATION_TABS 
@@ -94,11 +95,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabLabel: {
-    fontSize: FONT_SIZE.SM,
-    fontWeight: '500',
+    ...TEXT_STYLES.tabLabel,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: FONT_SIZE.SM + 2,
     width: '100%',
   },
   activeTabLabel: {
