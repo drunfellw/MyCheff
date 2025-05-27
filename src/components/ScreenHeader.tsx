@@ -14,6 +14,15 @@ import {
   BORDER_RADIUS,
   SHADOW_PRESETS 
 } from '../constants';
+import { 
+  createButtonAccessibility,
+  createHeadingAccessibility 
+} from '../utils/accessibility';
+import { 
+  useResponsiveDimensions,
+  getHitSlop,
+  getMinTouchTarget 
+} from '../utils/responsiveDesign';
 
 interface ScreenHeaderProps {
   title: string;
@@ -22,56 +31,107 @@ interface ScreenHeaderProps {
   centerElement?: React.ReactNode;
   showBackButton?: boolean;
   backgroundColor?: string;
+  testID?: string;
 }
 
 /**
  * ScreenHeader Component
  * 
- * Standardized header for all screens
- * Consistent styling, spacing, and behavior
+ * Standardized header for all screens with:
+ * - Full accessibility support (WCAG 2.1 AA)
+ * - Responsive design for all device sizes
+ * - Safe area handling
+ * - Performance optimizations
+ * - Consistent design system integration
  */
-const ScreenHeader: React.FC<ScreenHeaderProps> = ({
+const ScreenHeader: React.FC<ScreenHeaderProps> = React.memo(({
   title,
   onBackPress,
   rightElement,
   centerElement,
   showBackButton = true,
   backgroundColor = COLORS.background,
+  testID = 'screen-header',
 }) => {
   const insets = useSafeAreaInsets();
+  const { isSmallDevice } = useResponsiveDimensions();
+  
+  // Accessibility props for back button
+  const backButtonAccessibility = createButtonAccessibility(
+    'Go back',
+    'Navigate to previous screen',
+    !onBackPress
+  );
+  
+  // Accessibility props for title
+  const titleAccessibility = createHeadingAccessibility(title, 1);
   
   return (
-    <View style={[styles.headerContainer, { paddingTop: insets.top, backgroundColor }]}>
+    <View 
+      style={[
+        styles.headerContainer, 
+        { 
+          paddingTop: insets.top, 
+          backgroundColor 
+        }
+      ]}
+      testID={testID}
+    >
       <View style={[styles.header, { backgroundColor }]}>
+        {/* Back Button */}
         {showBackButton ? (
           <TouchableOpacity 
-            style={styles.backButton}
+            style={[
+              styles.backButton,
+              { minHeight: getMinTouchTarget() }
+            ]}
             onPress={onBackPress}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            hitSlop={getHitSlop()}
+            disabled={!onBackPress}
+            {...backButtonAccessibility}
+            testID={`${testID}-back-button`}
           >
-            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons 
+              name="arrow-back" 
+              size={isSmallDevice ? 20 : 24} 
+              color={COLORS.textPrimary} 
+            />
           </TouchableOpacity>
         ) : (
           <View style={styles.backButtonSpacer} />
         )}
         
+        {/* Center Content */}
         <View style={styles.centerContainer}>
           {centerElement ? (
             centerElement
           ) : (
-            <Text style={styles.headerTitle} numberOfLines={1}>
+            <Text 
+              style={[
+                styles.headerTitle,
+                isSmallDevice && styles.smallDeviceTitle
+              ]} 
+              numberOfLines={1}
+              adjustsFontSizeToFit={isSmallDevice}
+              minimumFontScale={0.8}
+              {...titleAccessibility}
+              testID={`${testID}-title`}
+            >
               {title}
             </Text>
           )}
         </View>
         
+        {/* Right Element */}
         <View style={styles.rightContainer}>
           {rightElement || <View style={styles.rightSpacer} />}
         </View>
       </View>
     </View>
   );
-};
+});
+
+ScreenHeader.displayName = 'ScreenHeader';
 
 const styles = StyleSheet.create({
   headerContainer: {
@@ -103,6 +163,10 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     textAlign: 'center',
   },
+  smallDeviceTitle: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
   rightContainer: {
     width: 80,
     height: 40,
@@ -121,4 +185,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default React.memo(ScreenHeader); 
+export default ScreenHeader; 
