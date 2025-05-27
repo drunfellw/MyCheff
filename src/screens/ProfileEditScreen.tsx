@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import ScreenHeader from '../components/ScreenHeader';
 import { 
   COLORS, 
   SPACING, 
@@ -99,21 +100,21 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
   return (
     <SafeAreaView style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation?.goBack()}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Profile</Text>
-          <TouchableOpacity 
-            style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
-            onPress={handleSave}
-            disabled={isLoading}
-          >
-            <Text style={styles.saveButtonText}>
-              {isLoading ? 'Saving...' : 'Save'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader
+          title="Edit Profile"
+          onBackPress={() => navigation?.goBack()}
+          rightElement={
+            <TouchableOpacity 
+              style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
+              onPress={handleSave}
+              disabled={isLoading}
+            >
+              <Text style={styles.saveButtonText}>
+                {isLoading ? 'Saving...' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          }
+        />
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Avatar Section */}
@@ -280,19 +281,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZE.LG,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
+
   saveButton: {
     backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.MD,

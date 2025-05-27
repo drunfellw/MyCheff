@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import Toast from '../components/Toast';
+import ScreenHeader from '../components/ScreenHeader';
 import { useToast } from '../hooks/useToast';
 import { 
   COLORS, 
@@ -88,13 +89,10 @@ const AddCardScreen: React.FC<AddCardScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation?.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add New Card</Text>
-        <View style={styles.placeholder} />
-      </View>
+      <ScreenHeader
+        title="Add New Card"
+        onBackPress={() => navigation?.goBack()}
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Card Preview */}
@@ -233,22 +231,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZE.LG,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  placeholder: {
-    width: 24,
-  },
+
   content: {
     flex: 1,
     paddingHorizontal: SPACING.md,

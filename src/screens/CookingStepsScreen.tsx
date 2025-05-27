@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BORDER_RADIUS.CIRCLE,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     ...SHADOW_PRESETS.SMALL,

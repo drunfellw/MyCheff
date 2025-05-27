@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import RecipeCard from '../components/RecipeCard';
 import NavigationBar from '../components/NavigationBar';
 import FilterModal from '../components/FilterModal';
+import ScreenHeader from '../components/ScreenHeader';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
 import type { Recipe as ImportedRecipe, FilterOptions } from '../types';
 

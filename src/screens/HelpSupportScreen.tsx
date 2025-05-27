@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import ScreenHeader from '../components/ScreenHeader';
 import { 
   COLORS, 
   SPACING, 
@@ -107,13 +108,10 @@ const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({ navigation }) => 
   return (
     <SafeAreaView style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation?.goBack()}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Help & Support</Text>
-          <View style={styles.placeholder} />
-        </View>
+        <ScreenHeader
+          title="Help & Support"
+          onBackPress={() => navigation?.goBack()}
+        />
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Quick Actions */}
@@ -233,22 +231,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZE.LG,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  placeholder: {
-    width: 24,
-  },
+
   content: {
     flex: 1,
     paddingHorizontal: SPACING.lg,

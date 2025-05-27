@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import RecipeCard from '../components/RecipeCard';
 import NavigationBar from '../components/NavigationBar';
+import ScreenHeader from '../components/ScreenHeader';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -236,22 +237,12 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation?.goBack()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        
-        <Text style={styles.headerTitle}>
-          {isSelectionMode ? `${selectedRecipes.size} Selected` : 'My Favorites'}
-        </Text>
-        
-        <View style={styles.headerActions}>
-          {favoriteRecipes.length > 0 && (
-            <>
+      <ScreenHeader
+        title={isSelectionMode ? `${selectedRecipes.size} Selected` : 'My Favorites'}
+        onBackPress={() => navigation?.goBack()}
+        rightElement={
+          favoriteRecipes.length > 0 ? (
+            <View style={styles.headerActions}>
               {isSelectionMode && (
                 <TouchableOpacity 
                   style={styles.headerButton}
@@ -272,10 +263,10 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
                   color={isSelectionMode && selectedRecipes.size > 0 ? COLORS.white : COLORS.textPrimary} 
                 />
               </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </View>
+            </View>
+          ) : undefined
+        }
+      />
 
       {favoriteRecipes.length > 0 && (
         <>
@@ -325,27 +316,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.CIRCLE,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...SHADOW_PRESETS.SMALL,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZE.XL,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
+
   headerActions: {
     flexDirection: 'row',
     gap: SPACING.sm,

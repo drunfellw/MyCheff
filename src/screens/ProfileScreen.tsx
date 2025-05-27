@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import NavigationBar from '../components/NavigationBar';
+import ScreenHeader from '../components/ScreenHeader';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
 
 interface ProfileScreenProps {
@@ -383,19 +384,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation?.goBack()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        
-        <Text style={styles.headerTitle}>Profile</Text>
-        
-        <View style={styles.headerSpacer} />
-      </View>
+        <ScreenHeader
+          title="Profile"
+          onBackPress={() => navigation?.goBack()}
+        />
 
       <ScrollView 
         style={styles.scrollView}
@@ -428,30 +420,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.CIRCLE,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...SHADOW_PRESETS.SMALL,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZE.XL,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
-  headerSpacer: {
-    width: 40,
-  },
+
   scrollView: {
     flex: 1,
   },

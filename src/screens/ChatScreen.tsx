@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ScreenHeader from '../components/ScreenHeader';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../constants';
 
 interface Ingredient {
@@ -138,13 +139,10 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation?.goBack()}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>What's in your kitchen?</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <ScreenHeader
+          title="What's in your kitchen?"
+          onBackPress={() => navigation?.goBack()}
+        />
 
         {/* Chat Area */}
         <ScrollView style={styles.chatArea} showsVerticalScrollIndicator={false}>
@@ -254,21 +252,7 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-  },
+
   chatArea: {
     flex: 1,
     paddingHorizontal: SPACING.md,

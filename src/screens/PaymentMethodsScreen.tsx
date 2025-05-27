@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import Toast from '../components/Toast';
+import ScreenHeader from '../components/ScreenHeader';
 import { useToast } from '../hooks/useToast';
 import { 
   COLORS, 
@@ -170,15 +171,15 @@ const PaymentMethodsScreen: React.FC<PaymentMethodsScreenProps> = ({ navigation 
     return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation?.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Payment Methods</Text>
-        <TouchableOpacity onPress={handleAddCard}>
-          <Ionicons name="add" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Payment Methods"
+        onBackPress={() => navigation?.goBack()}
+        rightElement={
+          <TouchableOpacity onPress={handleAddCard}>
+            <Ionicons name="add" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Cards List */}
@@ -217,19 +218,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.white,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZE.LG,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
+
   content: {
     flex: 1,
     paddingHorizontal: SPACING.md,
