@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
+import { 
+  COLORS, 
+  COMPONENT_SPACING, 
+  FONT_SIZE, 
+  BORDER_RADIUS, 
+  SHADOW_PRESETS 
+} from '../constants';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -24,36 +30,78 @@ interface RecipeCardProps {
   isSelectionMode?: boolean;
 }
 
+const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=300&fit=crop';
+
 /**
- * RecipeCard Component - Airbnb Style
+ * RecipeCard Component
  * 
- * Modern, profesyonel recipe kartı - Airbnb HostCard'ına benzer
+ * Professional recipe card following design system standards
+ * Features modern design with optimized performance
  */
-const RecipeCard = ({ recipe, onPress, onFavoritePress, isSelected = false, isSelectionMode = false }: RecipeCardProps) => {
-  const defaultImage = 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=300&fit=crop';
-  
-  // Kart genişliği hesaplama - 2 kartlı grid için
-  const horizontalMargin = SPACING.lg * 2;
-  const cardGap = SPACING.lg;
-  const cardWidth = (screenWidth - horizontalMargin - cardGap) / 2;
+const RecipeCard = React.memo<RecipeCardProps>(({ 
+  recipe, 
+  onPress, 
+  onFavoritePress, 
+  isSelected = false, 
+  isSelectionMode = false 
+}) => {
+  // Calculate card width using design system
+  const cardWidth = useMemo(() => {
+    const horizontalMargin = COMPONENT_SPACING.GRID.HORIZONTAL_PADDING * 2;
+    const cardGap = COMPONENT_SPACING.GRID.SPACING;
+    return (screenWidth - horizontalMargin - cardGap) / COMPONENT_SPACING.GRID.COLUMNS_PHONE;
+  }, []);
+
+  const handlePress = useCallback(() => {
+    onPress?.(recipe);
+  }, [onPress, recipe]);
+
+  const handleFavoritePress = useCallback((e: any) => {
+    e.stopPropagation();
+    onFavoritePress?.(recipe.id);
+  }, [onFavoritePress, recipe.id]);
+
+  const favoriteIconName = useMemo(() => {
+    if (isSelectionMode) {
+      return isSelected ? "checkmark-circle" : "ellipse-outline";
+    }
+    return recipe.isFavorite ? "heart" : "heart-outline";
+  }, [isSelectionMode, isSelected, recipe.isFavorite]);
+
+  const favoriteIconColor = useMemo(() => {
+    if (isSelectionMode) {
+      return COLORS.white;
+    }
+    return recipe.isFavorite ? COLORS.primary : COLORS.white;
+  }, [isSelectionMode, recipe.isFavorite]);
 
   return (
     <TouchableOpacity 
-      style={[styles.container, { width: cardWidth }, isSelected && styles.selectedContainer]} 
-      onPress={() => onPress?.(recipe)}
+      style={[
+        styles.container, 
+        { width: cardWidth }, 
+        isSelected && styles.selectedContainer
+      ]} 
+      onPress={handlePress}
       activeOpacity={0.95}
     >
-      {/* Recipe Image Container - Sadece fotoğraf kart */}
-      <View style={[styles.imageContainer, isSelected && styles.selectedImageContainer]}>
+      {/* Recipe Image Container */}
+      <View style={[
+        styles.imageContainer, 
+        isSelected && styles.selectedImageContainer
+      ]}>
         <Image
-          source={{ uri: recipe.image || defaultImage }}
+          source={{ uri: recipe.image || DEFAULT_IMAGE }}
           style={styles.image}
           resizeMode="cover"
         />
         
         {/* Selection Overlay */}
         {isSelectionMode && (
-          <View style={[styles.selectionOverlay, isSelected && styles.selectedOverlay]} />
+          <View style={[
+            styles.selectionOverlay, 
+            isSelected && styles.selectedOverlay
+          ]} />
         )}
         
         {/* Favorite/Selection Button */}
@@ -63,55 +111,34 @@ const RecipeCard = ({ recipe, onPress, onFavoritePress, isSelected = false, isSe
             isSelectionMode && styles.selectionButton,
             isSelected && styles.selectedButton
           ]}
-          onPress={(e) => {
-            e.stopPropagation();
-            onFavoritePress?.(recipe.id);
-          }}
+          onPress={handleFavoritePress}
           activeOpacity={0.8}
         >
-          {isSelectionMode ? (
-            <Ionicons
-              name={isSelected ? "checkmark-circle" : "ellipse-outline"}
-              size={24}
-              color={isSelected ? COLORS.white : COLORS.white}
-            />
-          ) : (
-            <Ionicons
-              name={recipe.isFavorite ? "heart" : "heart-outline"}
-              size={22}
-              color={recipe.isFavorite ? COLORS.primary : COLORS.white}
-            />
-          )}
-        </TouchableOpacity>
-
-        {/* Time Badge */}
-        <View style={styles.timeBadge}>
           <Ionicons
-            name="time-outline"
-            size={14}
-            color={COLORS.white}
+            name={favoriteIconName as any}
+            size={isSelectionMode ? 24 : 22}
+            color={favoriteIconColor}
           />
-          <Text style={styles.timeText}>
-            {recipe.time || '3 min'}
-          </Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
-      {/* Recipe Info - Sayfa üzerinde normal text */}
+      {/* Recipe Info */}
       <View style={styles.infoContainer}>
         {/* Recipe Title */}
         <Text style={styles.title} numberOfLines={2}>
           {recipe.title || 'Soğuk Amerikano'}
         </Text>
 
-        {/* Recipe Category - Review kaldırıldı */}
+        {/* Recipe Category */}
         <Text style={styles.subtitle} numberOfLines={1}>
           {recipe.category || 'Delicious beverage'}
         </Text>
       </View>
     </TouchableOpacity>
   );
-};
+});
+
+RecipeCard.displayName = 'RecipeCard';
 
 const styles = StyleSheet.create({
   container: {
@@ -123,8 +150,8 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: 'relative',
     width: '100%',
-    height: 140,
-    borderRadius: BORDER_RADIUS.LG,
+    height: COMPONENT_SPACING.CARD.IMAGE_HEIGHT,
+    borderRadius: COMPONENT_SPACING.CARD.BORDER_RADIUS,
     overflow: 'hidden',
     backgroundColor: COLORS.white,
     ...SHADOW_PRESETS.MEDIUM,
@@ -139,8 +166,8 @@ const styles = StyleSheet.create({
   },
   favoriteButton: {
     position: 'absolute',
-    top: SPACING.sm,
-    right: SPACING.sm,
+    top: COMPONENT_SPACING.CARD.MARGIN,
+    right: COMPONENT_SPACING.CARD.MARGIN,
     width: 32,
     height: 32,
     borderRadius: BORDER_RADIUS.CIRCLE,
@@ -164,56 +191,22 @@ const styles = StyleSheet.create({
   selectedOverlay: {
     backgroundColor: 'rgba(249, 58, 59, 0.3)',
   },
-  timeBadge: {
-    position: 'absolute',
-    bottom: SPACING.sm,
-    left: SPACING.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.MD,
-    gap: SPACING.xs,
-  },
-  timeText: {
-    fontSize: FONT_SIZE.XS,
-    fontWeight: '600',
-    color: COLORS.white,
-    lineHeight: 14,
-  },
   infoContainer: {
-    paddingTop: SPACING.md,
-    gap: SPACING.xs,
+    paddingTop: COMPONENT_SPACING.CARD.PADDING,
+    gap: 4, // Minimal gap between title and subtitle
     backgroundColor: 'transparent',
   },
   title: {
     fontSize: FONT_SIZE.MD,
     fontWeight: '600',
     color: COLORS.textPrimary,
-    lineHeight: 18,
+    lineHeight: FONT_SIZE.LG + 2,
   },
   subtitle: {
     fontSize: FONT_SIZE.SM,
     fontWeight: '400',
     color: COLORS.textSecondary,
-    lineHeight: 16,
-  },
-  bottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  ratingText: {
-    fontSize: FONT_SIZE.SM,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    lineHeight: 16,
+    lineHeight: FONT_SIZE.MD + 2,
   },
 });
 

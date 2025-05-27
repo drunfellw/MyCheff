@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -14,46 +14,70 @@ import { COLORS } from './src/constants';
 
 type Screen = 'Home' | 'Search' | 'SearchResults' | 'Favorites' | 'RecipeDetail' | 'Profile' | 'Chat' | 'CookingSteps';
 
+interface NavigationParams {
+  [key: string]: any;
+}
+
+interface Navigation {
+  navigate: (screen: string, params?: NavigationParams) => void;
+  goBack: () => void;
+  getCurrentScreen: () => Screen;
+}
+
 /**
  * Main App Component
  * 
  * MyCheff Frontend - Professional Recipe App
- * Basit navigation sistemi ile screen yönetimi
+ * Features optimized navigation system and performance
  */
-export default function App() {
+const App = React.memo(() => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('Home');
+  const [navigationHistory, setNavigationHistory] = useState<Screen[]>(['Home']);
 
-  const navigation = {
-    navigate: (screen: string, params?: any) => {
-      setCurrentScreen(screen as Screen);
+  const navigation: Navigation = useMemo(() => ({
+    navigate: (screen: string, params?: NavigationParams) => {
+      const targetScreen = screen as Screen;
+      setCurrentScreen(targetScreen);
+      setNavigationHistory(prev => [...prev, targetScreen]);
     },
     goBack: () => {
-      setCurrentScreen('Home');
-    }
-  };
+      setNavigationHistory(prev => {
+        if (prev.length > 1) {
+          const newHistory = prev.slice(0, -1);
+          const previousScreen = newHistory[newHistory.length - 1];
+          setCurrentScreen(previousScreen);
+          return newHistory;
+        }
+        return prev;
+      });
+    },
+    getCurrentScreen: () => currentScreen,
+  }), [currentScreen]);
 
-  const renderScreen = () => {
+  const renderScreen = useCallback(() => {
+    const screenProps = { navigation };
+    
     switch (currentScreen) {
       case 'Home':
-        return <HomeScreen navigation={navigation} />;
+        return <HomeScreen {...screenProps} />;
       case 'Search':
-        return <SearchScreen navigation={navigation} />;
+        return <SearchScreen {...screenProps} />;
       case 'SearchResults':
-        return <SearchResultsScreen navigation={navigation} />;
+        return <SearchResultsScreen {...screenProps} />;
       case 'Favorites':
-        return <FavoritesScreen navigation={navigation} />;
+        return <FavoritesScreen {...screenProps} />;
       case 'RecipeDetail':
-        return <RecipeDetailScreen navigation={navigation} />;
+        return <RecipeDetailScreen {...screenProps} />;
       case 'Profile':
-        return <ProfileScreen navigation={navigation} />;
+        return <ProfileScreen {...screenProps} />;
       case 'Chat':
-        return <ChatScreen navigation={navigation} />;
+        return <ChatScreen {...screenProps} />;
       case 'CookingSteps':
-        return <CookingStepsScreen navigation={navigation} />;
+        return <CookingStepsScreen {...screenProps} />;
       default:
-        return <HomeScreen navigation={navigation} />;
+        return <HomeScreen {...screenProps} />;
     }
-  };
+  }, [currentScreen, navigation]);
 
   return (
     <SafeAreaProvider>
@@ -63,7 +87,9 @@ export default function App() {
       </View>
     </SafeAreaProvider>
   );
-}
+});
+
+App.displayName = 'App';
 
 const styles = StyleSheet.create({
   container: {
@@ -71,3 +97,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
 });
+
+export default App;

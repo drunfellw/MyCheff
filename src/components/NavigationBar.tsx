@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, SHADOW_PRESETS } from '../constants';
-
-interface Tab {
-  id: string;
-  label: string;
-  icon: string;
-}
+import { 
+  COLORS, 
+  COMPONENT_SPACING, 
+  FONT_SIZE, 
+  SHADOW_PRESETS,
+  NAVIGATION_TABS 
+} from '../constants';
 
 interface NavigationBarProps {
   activeTab?: string;
@@ -17,17 +17,14 @@ interface NavigationBarProps {
 /**
  * NavigationBar Component
  * 
- * Alt navigation bar komponenti - Figma tasarımına uygun
+ * Professional bottom navigation bar following design system
+ * Uses centralized tab configuration from constants
  */
-const NavigationBar = ({ activeTab = 'home', onTabPress }: NavigationBarProps) => {
-  const tabs: Tab[] = [
-    { id: 'home', label: 'Home', icon: 'home' },
-    { id: 'search', label: 'Search', icon: 'search' },
-    { id: 'favorites', label: 'Favorites', icon: 'heart' },
-    { id: 'profile', label: 'Profile', icon: 'person' },
-  ];
-
-  const renderTab = (tab: Tab) => {
+const NavigationBar = React.memo<NavigationBarProps>(({ 
+  activeTab = 'home', 
+  onTabPress 
+}) => {
+  const renderTab = useCallback((tab: typeof NAVIGATION_TABS[0]) => {
     const isActive = tab.id === activeTab;
     
     return (
@@ -41,7 +38,7 @@ const NavigationBar = ({ activeTab = 'home', onTabPress }: NavigationBarProps) =
         <View style={styles.iconContainer}>
           <Ionicons
             name={`${tab.icon}${isActive ? '' : '-outline'}` as any}
-            size={24}
+            size={COMPONENT_SPACING.NAVIGATION.ICON_SIZE}
             color={isActive ? COLORS.primary : COLORS.textSecondary}
           />
         </View>
@@ -55,14 +52,16 @@ const NavigationBar = ({ activeTab = 'home', onTabPress }: NavigationBarProps) =
         </Text>
       </TouchableOpacity>
     );
-  };
+  }, [activeTab, onTabPress]);
 
   return (
     <View style={styles.container}>
-      {tabs.map(renderTab)}
+      {NAVIGATION_TABS.map(renderTab)}
     </View>
   );
-};
+});
+
+NavigationBar.displayName = 'NavigationBar';
 
 const styles = StyleSheet.create({
   container: {
@@ -74,8 +73,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'stretch',
     backgroundColor: COLORS.white,
-    paddingHorizontal: SPACING.sm,
-    gap: SPACING.sm,
+    paddingHorizontal: COMPONENT_SPACING.NAVIGATION.PADDING,
+    height: COMPONENT_SPACING.NAVIGATION.HEIGHT,
     ...SHADOW_PRESETS.NAVIGATION,
   },
   tabItem: {
@@ -83,12 +82,12 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: SPACING.lg,
-    gap: SPACING.xs,
+    paddingVertical: COMPONENT_SPACING.NAVIGATION.PADDING,
+    gap: 4, // Minimal gap between icon and label
   },
   iconContainer: {
-    width: 24,
-    height: 24,
+    width: COMPONENT_SPACING.NAVIGATION.ICON_SIZE,
+    height: COMPONENT_SPACING.NAVIGATION.ICON_SIZE,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -97,7 +96,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: FONT_SIZE.SM + 2,
     width: '100%',
   },
   activeTabLabel: {

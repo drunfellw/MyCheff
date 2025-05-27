@@ -1,7 +1,14 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../constants';
+import { 
+  COLORS, 
+  COMPONENT_SPACING, 
+  FONT_SIZE, 
+  BORDER_RADIUS,
+  CATEGORY_ICONS,
+  ANIMATION_DURATION 
+} from '../constants';
 
 interface Category {
   id: string;
@@ -15,58 +22,56 @@ interface ScrollMenuProps {
   onCategorySelect?: (categoryId: string) => void;
 }
 
+// Category item dimensions from design system
+const CATEGORY_ITEM = {
+  WIDTH: 70,
+  HEIGHT: 65,
+  ICON_SIZE: 32,
+  GAP: 6,
+} as const;
+
 /**
- * ScrollMenu Component - Airbnb Style
+ * ScrollMenu Component
  * 
- * Horizontal kategoriler listesi - Airbnb tarzında auto-scroll indicator
+ * Professional horizontal category menu following design system
+ * Features smooth animations and optimized performance
  */
-const ScrollMenu = ({ categories = [], selectedCategory, onCategorySelect }: ScrollMenuProps) => {
+const ScrollMenu = React.memo<ScrollMenuProps>(({ 
+  categories = [], 
+  selectedCategory, 
+  onCategorySelect 
+}) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const slideAnimation = useRef(new Animated.Value(0)).current;
-  const categoryWidth = 70;
-  const categoryGap = SPACING.xs;
 
-  // İkon mapping'i
-  const getCategoryIcon = (iconName: string): string => {
-    const iconMap: { [key: string]: string } = {
-      'breakfast-icon': 'cafe-outline',
-      'sandwich-icon': 'fast-food-outline',
-      'salad-icon': 'leaf-outline',
-      'steak-icon': 'restaurant-outline',
-      'chicken-icon': 'nutrition-outline',
-      'vegetable-icon': 'flower-outline',
-      'pastas-icon': 'cafe-outline',
-      'main-meals-icon': 'pizza-outline',
-      'desserts-icon': 'ice-cream-outline',
-      'drinks-icon': 'wine-outline',
-    };
-    return iconMap[iconName] || 'ellipse-outline';
-  };
+  // Icon mapping using constants
+  const getCategoryIcon = useCallback((iconName: string): string => {
+    return CATEGORY_ICONS[iconName as keyof typeof CATEGORY_ICONS] || 'ellipse-outline';
+  }, []);
 
-  // Seçili kategori değiştiğinde sadece indicator animate et
-  useEffect(() => {
+  // Calculate indicator position
+  const indicatorPosition = useMemo(() => {
     const selectedIndex = categories.findIndex(cat => cat.id === selectedCategory);
+    if (selectedIndex === -1) return 0;
     
-    if (selectedIndex !== -1) {
-      // Sadece indicator animasyonu
-      const indicatorPosition = selectedIndex * (categoryWidth + categoryGap);
-      
-      Animated.spring(slideAnimation, {
-        toValue: indicatorPosition,
-        useNativeDriver: true,
-        tension: 120,
-        friction: 9,
-      }).start();
+    return selectedIndex * (CATEGORY_ITEM.WIDTH + COMPONENT_SPACING.CARD.MARGIN);
+  }, [selectedCategory, categories]);
 
-      // Auto-scroll'u kaldırdık - sadece manuel scroll
-    }
-  }, [selectedCategory, categories, slideAnimation]);
+  // Animate indicator when selection changes
+  useEffect(() => {
+    Animated.spring(slideAnimation, {
+      toValue: indicatorPosition,
+      useNativeDriver: true,
+      tension: 120,
+      friction: 9,
+    }).start();
+  }, [indicatorPosition, slideAnimation]);
 
-  const handleCategoryPress = (categoryId: string) => {
+  const handleCategoryPress = useCallback((categoryId: string) => {
     onCategorySelect?.(categoryId);
-  };
+  }, [onCategorySelect]);
 
-  const renderCategoryItem = (category: Category, index: number) => {
+  const renderCategoryItem = useCallback((category: Category, index: number) => {
     const isSelected = category.id === selectedCategory;
     
     return (
@@ -79,7 +84,7 @@ const ScrollMenu = ({ categories = [], selectedCategory, onCategorySelect }: Scr
         <View style={styles.iconContainer}>
           <Ionicons
             name={getCategoryIcon(category.icon) as any}
-            size={32}
+            size={CATEGORY_ITEM.ICON_SIZE}
             color={isSelected ? COLORS.textPrimary : COLORS.textSecondary}
           />
         </View>
@@ -96,7 +101,7 @@ const ScrollMenu = ({ categories = [], selectedCategory, onCategorySelect }: Scr
         </Text>
       </TouchableOpacity>
     );
-  };
+  }, [selectedCategory, handleCategoryPress, getCategoryIcon]);
 
   return (
     <View style={styles.container}>
@@ -108,9 +113,9 @@ const ScrollMenu = ({ categories = [], selectedCategory, onCategorySelect }: Scr
         style={styles.scrollView}
         decelerationRate="normal"
       >
-        {categories.map((category, index) => renderCategoryItem(category, index))}
+        {categories.map(renderCategoryItem)}
         
-        {/* Indicator ScrollView içinde - kategorilerle birlikte hareket eder */}
+        {/* Animated Indicator */}
         <View style={styles.indicatorContainer}>
           <Animated.View 
             style={[
@@ -124,39 +129,41 @@ const ScrollMenu = ({ categories = [], selectedCategory, onCategorySelect }: Scr
       </ScrollView>
     </View>
   );
-};
+});
+
+ScrollMenu.displayName = 'ScrollMenu';
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: SPACING.lg,
+    marginTop: COMPONENT_SPACING.SEARCH_BAR.HORIZONTAL,
   },
   scrollView: {
-    marginHorizontal: SPACING.lg,
+    marginHorizontal: COMPONENT_SPACING.SEARCH_BAR.HORIZONTAL,
   },
   scrollContent: {
-    paddingRight: SPACING.lg,
-    gap: SPACING.xs,
+    paddingRight: COMPONENT_SPACING.SEARCH_BAR.HORIZONTAL,
+    gap: COMPONENT_SPACING.CARD.MARGIN,
     position: 'relative',
   },
   categoryItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 70,
-    height: 65,
-    gap: 6,
+    width: CATEGORY_ITEM.WIDTH,
+    height: CATEGORY_ITEM.HEIGHT,
+    gap: CATEGORY_ITEM.GAP,
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: 2, // Minimal gap for icon alignment
   },
   categoryText: {
     fontSize: FONT_SIZE.SM,
     fontWeight: '500',
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 14,
-    width: 70,
+    lineHeight: FONT_SIZE.SM + 2,
+    width: CATEGORY_ITEM.WIDTH,
   },
   selectedCategoryText: {
     color: COLORS.textPrimary,
@@ -169,7 +176,7 @@ const styles = StyleSheet.create({
     height: 2,
   },
   slidingIndicator: {
-    width: 70,
+    width: CATEGORY_ITEM.WIDTH,
     height: 2,
     backgroundColor: COLORS.textPrimary,
     borderRadius: BORDER_RADIUS.XS,

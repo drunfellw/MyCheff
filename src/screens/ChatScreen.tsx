@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,234 +22,282 @@ interface ChatScreenProps {
   };
 }
 
-interface Message {
+interface Ingredient {
   id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-  ingredients?: string[];
+  name: string;
+  category: string;
 }
 
 /**
  * ChatScreen Component
  * 
- * Modern chat interface for ingredient-based recipe search
- * Users can input ingredients they have and get recipe suggestions
+ * Ingredient-based recipe assistant
+ * Users can search and select ingredients to find matching recipes
  */
 const ChatScreen: React.FC<ChatScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const [inputText, setInputText] = useState<string>('');
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Merhaba! 👋 Elinizdeki malzemeleri söyleyin, size harika tarifler önereyim!',
-      isUser: false,
-      timestamp: new Date(),
-    },
-    {
-      id: '2',
-      text: 'Örneğin: "Elimde domates, soğan ve tavuk var" diyebilirsiniz.',
-      isUser: false,
-      timestamp: new Date(),
-    },
-  ]);
-  const flatListRef = useRef<FlatList>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedIngredients, setSelectedIngredients] = useState<Ingredient[]>([]);
+  const [searchResults, setSearchResults] = useState<Ingredient[]>([]);
+  const [showResults, setShowResults] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  
+  const searchInputRef = useRef<TextInput>(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Auto scroll to bottom when new message added
-  useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+  // Mock ingredients data
+  const mockIngredients: Ingredient[] = useMemo(() => [
+    { id: '1', name: 'Chicken Breast', category: 'Protein' },
+    { id: '2', name: 'Tomatoes', category: 'Vegetables' },
+    { id: '3', name: 'Onions', category: 'Vegetables' },
+    { id: '4', name: 'Garlic', category: 'Aromatics' },
+    { id: '5', name: 'Rice', category: 'Grains' },
+    { id: '6', name: 'Pasta', category: 'Grains' },
+    { id: '7', name: 'Cheese', category: 'Dairy' },
+    { id: '8', name: 'Eggs', category: 'Protein' },
+    { id: '9', name: 'Milk', category: 'Dairy' },
+    { id: '10', name: 'Bread', category: 'Grains' },
+    { id: '11', name: 'Potatoes', category: 'Vegetables' },
+    { id: '12', name: 'Carrots', category: 'Vegetables' },
+    { id: '13', name: 'Bell Peppers', category: 'Vegetables' },
+    { id: '14', name: 'Olive Oil', category: 'Oils' },
+    { id: '15', name: 'Salt', category: 'Seasonings' },
+    { id: '16', name: 'Black Pepper', category: 'Seasonings' },
+    { id: '17', name: 'Butter', category: 'Dairy' },
+    { id: '18', name: 'Lemon', category: 'Fruits' },
+    { id: '19', name: 'Spinach', category: 'Vegetables' },
+    { id: '20', name: 'Mushrooms', category: 'Vegetables' },
+  ], []);
+
+  // Search functionality
+  const searchIngredients = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
     }
-  }, [messages]);
 
-  const handleSendMessage = useCallback(() => {
-    if (inputText.trim()) {
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        text: inputText.trim(),
-        isUser: true,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, userMessage]);
-      setInputText('');
-
-      // Simulate AI response
-      setTimeout(() => {
-        const ingredients = extractIngredients(inputText);
-        const botResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          text: generateBotResponse(ingredients),
-          isUser: false,
-          timestamp: new Date(),
-          ingredients,
-        };
-        setMessages(prev => [...prev, botResponse]);
-      }, 1000);
-    }
-  }, [inputText]);
-
-  // Extract ingredients from user message (simple implementation)
-  const extractIngredients = useCallback((text: string): string[] => {
-    const commonIngredients = [
-      'domates', 'soğan', 'tavuk', 'et', 'balık', 'yumurta', 'süt', 'peynir',
-      'patates', 'havuç', 'biber', 'salatalık', 'marul', 'makarna', 'pirinç',
-      'un', 'şeker', 'tuz', 'karabiber', 'zeytinyağı', 'tereyağı', 'sarımsak',
-      'limon', 'domates', 'fasulye', 'nohut', 'mercimek', 'bulgur'
-    ];
+    setIsLoading(true);
     
-    const foundIngredients = commonIngredients.filter(ingredient =>
-      text.toLowerCase().includes(ingredient)
-    );
-    
-    return foundIngredients.length > 0 ? foundIngredients : ['genel malzemeler'];
-  }, []);
-
-  // Generate bot response based on ingredients
-  const generateBotResponse = useCallback((ingredients: string[]): string => {
-    if (ingredients.includes('genel malzemeler')) {
-      return 'Hangi malzemelerin olduğunu daha detaylı söyleyebilir misiniz? Böylece size daha uygun tarifler önerebilirim! 🍳';
-    }
-
-    const responses = [
-      `Harika! ${ingredients.join(', ')} ile yapabileceğiniz ${Math.floor(Math.random() * 10) + 5} farklı tarif buldum! 🎉`,
-      `${ingredients.join(', ')} malzemeleriyle enfes yemekler yapabilirsiniz! Size özel tarifler hazırlıyorum... ✨`,
-      `Mükemmel kombinasyon! ${ingredients.join(', ')} ile hem kolay hem lezzetli tarifler var. 👨‍🍳`,
-    ];
-
-    return responses[Math.floor(Math.random() * responses.length)];
-  }, []);
-
-  const renderMessage = useCallback(({ item }: { item: Message }) => (
-    <View style={[
-      styles.messageContainer,
-      item.isUser ? styles.userMessage : styles.botMessage
-    ]}>
-      <View style={[
-        styles.messageBubble,
-        item.isUser ? styles.userBubble : styles.botBubble
-      ]}>
-        <Text style={[
-          styles.messageText,
-          item.isUser ? styles.userText : styles.botText
-        ]}>
-          {item.text}
-        </Text>
-        
-        {/* Show ingredients as chips for bot messages */}
-        {!item.isUser && item.ingredients && item.ingredients.length > 0 && (
-          <View style={styles.ingredientsContainer}>
-            {item.ingredients.map((ingredient, index) => (
-              <View key={index} style={styles.ingredientChip}>
-                <Text style={styles.ingredientText}>{ingredient}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      <Text style={[
-        styles.timestamp,
-        item.isUser ? styles.userTimestamp : styles.botTimestamp
-      ]}>
-        {item.timestamp.toLocaleTimeString('tr-TR', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        })}
-      </Text>
-    </View>
-  ), []);
+      const filtered = mockIngredients.filter(ingredient =>
+        ingredient.name.toLowerCase().includes(query.toLowerCase()) &&
+        !selectedIngredients.some(selected => selected.id === ingredient.id)
+      );
+      
+      setSearchResults(filtered);
+      setShowResults(true);
+      
+      // Animate results appearance
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+      
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [mockIngredients, selectedIngredients, fadeAnim]);
 
-  const renderSuggestions = useCallback(() => (
-    <View style={styles.suggestionsContainer}>
-      <Text style={styles.suggestionsTitle}>Hızlı başlangıç örnekleri:</Text>
-      <View style={styles.suggestionChips}>
-        {[
-          'Elimde tavuk ve sebze var',
-          'Makarna yapacağım',
-          'Kahvaltı hazırlamak istiyorum',
-          'Tatlı yapmak istiyorum'
-        ].map((suggestion, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.suggestionChip}
-            onPress={() => setInputText(suggestion)}
-          >
-            <Text style={styles.suggestionText}>{suggestion}</Text>
-          </TouchableOpacity>
-        ))}
+  // Debounced search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchIngredients(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, searchIngredients]);
+
+  // Add ingredient to selection
+  const handleSelectIngredient = useCallback((ingredient: Ingredient) => {
+    setSelectedIngredients(prev => [...prev, ingredient]);
+    setSearchQuery('');
+    setShowResults(false);
+    fadeAnim.setValue(0);
+  }, [fadeAnim]);
+
+  // Remove ingredient from selection
+  const handleRemoveIngredient = useCallback((ingredientId: string) => {
+    setSelectedIngredients(prev => prev.filter(item => item.id !== ingredientId));
+  }, []);
+
+  // Navigate to search results
+  const handleFindRecipes = useCallback(() => {
+    if (selectedIngredients.length === 0) return;
+    
+    // Navigate to SearchResults with selected ingredients
+    navigation?.navigate('SearchResults', { 
+      ingredients: selectedIngredients.map(ing => ing.name) 
+    });
+  }, [selectedIngredients, navigation]);
+
+  // Clear all selections
+  const handleClearAll = useCallback(() => {
+    setSelectedIngredients([]);
+    setSearchQuery('');
+    setShowResults(false);
+  }, []);
+
+  // Render search result item
+  const renderSearchResult = useCallback(({ item }: { item: Ingredient }) => (
+    <TouchableOpacity
+      style={styles.resultItem}
+      onPress={() => handleSelectIngredient(item)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.resultContent}>
+        <Text style={styles.resultName}>{item.name}</Text>
+        <Text style={styles.resultCategory}>{item.category}</Text>
       </View>
+      <Ionicons name="add-circle-outline" size={24} color={COLORS.primary} />
+    </TouchableOpacity>
+  ), [handleSelectIngredient]);
+
+  // Render selected ingredient chip
+  const renderSelectedChip = useCallback(({ item }: { item: Ingredient }) => (
+    <View style={styles.selectedChip}>
+      <Text style={styles.chipText}>{item.name}</Text>
+      <TouchableOpacity
+        onPress={() => handleRemoveIngredient(item.id)}
+        style={styles.chipRemove}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Ionicons name="close" size={16} color={COLORS.textMuted} />
+      </TouchableOpacity>
     </View>
-  ), []);
+  ), [handleRemoveIngredient]);
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation?.goBack()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>MyCheff AI</Text>
-          <Text style={styles.headerSubtitle}>Malzeme bazlı tarif asistanı</Text>
-        </View>
-        
-        <View style={styles.aiIndicator}>
-          <View style={styles.aiDot} />
-          <Text style={styles.aiText}>AI</Text>
-        </View>
-      </View>
-
       <KeyboardAvoidingView 
-        style={styles.content}
+        style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={insets.top}
       >
-        {/* Messages */}
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
-          style={styles.messagesList}
-          contentContainerStyle={styles.messagesContent}
-          showsVerticalScrollIndicator={false}
-          ListFooterComponent={messages.length <= 2 ? renderSuggestions : null}
-        />
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation?.goBack()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+          
+          <Text style={styles.headerTitle}>Ingredient Assistant</Text>
+          
+          <View style={styles.headerSpacer} />
+        </View>
 
-        {/* Input Area */}
-        <View style={[styles.inputContainer, { paddingBottom: insets.bottom + SPACING.md }]}>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Elinizdeki malzemeleri yazın..."
-              placeholderTextColor={COLORS.textMuted}
-              value={inputText}
-              onChangeText={setInputText}
-              multiline
-              maxLength={500}
-              returnKeyType="send"
-              onSubmitEditing={handleSendMessage}
-            />
-            <TouchableOpacity
-              style={[styles.sendButton, inputText.trim() && styles.sendButtonActive]}
-              onPress={handleSendMessage}
-              disabled={!inputText.trim()}
-            >
-              <Ionicons 
-                name="send" 
-                size={20} 
-                color={inputText.trim() ? COLORS.white : COLORS.textMuted} 
-              />
-            </TouchableOpacity>
+        {/* Welcome Message Bubble */}
+        <View style={styles.welcomeContainer}>
+          <View style={styles.welcomeBubble}>
+            <Text style={styles.welcomeText}>
+              Hello! 👋 You can enter the ingredients you have available. I'll help you find amazing recipes based on what you have!
+            </Text>
           </View>
         </View>
+
+        {/* Search Input */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={20} color={COLORS.textMuted} />
+            <TextInput
+              ref={searchInputRef}
+              style={styles.searchInput}
+              placeholder="Search ingredients..."
+              placeholderTextColor={COLORS.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="words"
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+            {isLoading && (
+              <Ionicons name="hourglass" size={20} color={COLORS.textMuted} />
+            )}
+          </View>
+        </View>
+
+        {/* Selected Ingredients */}
+        {selectedIngredients.length > 0 && (
+          <View style={styles.selectedSection}>
+            <View style={styles.selectedHeader}>
+              <Text style={styles.selectedTitle}>
+                Selected Ingredients ({selectedIngredients.length})
+              </Text>
+              <TouchableOpacity onPress={handleClearAll}>
+                <Text style={styles.clearText}>Clear All</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={selectedIngredients}
+              renderItem={renderSelectedChip}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.selectedList}
+              ItemSeparatorComponent={() => <View style={{ width: SPACING.sm }} />}
+            />
+          </View>
+        )}
+
+        {/* Main Content */}
+        <View style={styles.mainContent}>
+          {/* Search Results */}
+          {showResults && (
+            <Animated.View style={[styles.resultsContainer, { opacity: fadeAnim }]}>
+              <FlatList
+                data={searchResults}
+                renderItem={renderSearchResult}
+                keyExtractor={(item) => item.id}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.resultsList}
+                ListEmptyComponent={
+                  <View style={styles.emptyState}>
+                    <Ionicons name="search" size={48} color={COLORS.textMuted} />
+                    <Text style={styles.emptyText}>No ingredients found</Text>
+                    <Text style={styles.emptySubtext}>Try a different search term</Text>
+                  </View>
+                }
+              />
+            </Animated.View>
+          )}
+
+          {/* Empty State */}
+          {!showResults && selectedIngredients.length === 0 && (
+            <View style={styles.emptyWelcome}>
+              <Ionicons name="restaurant-outline" size={64} color={COLORS.textMuted} />
+              <Text style={styles.emptyWelcomeTitle}>Start Adding Ingredients</Text>
+              <Text style={styles.emptyWelcomeText}>
+                Search and select ingredients you have to discover amazing recipes
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Find Recipes Button */}
+        {selectedIngredients.length > 0 && (
+          <View style={[styles.bottomContainer, { paddingBottom: insets.bottom + SPACING.md }]}>
+            <TouchableOpacity
+              style={styles.findRecipesButton}
+              onPress={handleFindRecipes}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="restaurant" size={20} color={COLORS.white} />
+              <Text style={styles.findRecipesButtonText}>
+                Find Recipes ({selectedIngredients.length} ingredients)
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -259,192 +308,198 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  keyboardView: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: BORDER_RADIUS.CIRCLE,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  headerInfo: {
-    flex: 1,
-    marginLeft: SPACING.md,
+    ...SHADOW_PRESETS.SMALL,
   },
   headerTitle: {
-    fontSize: FONT_SIZE.LG,
-    fontWeight: '600',
+    fontSize: FONT_SIZE.XL,
+    fontWeight: '700',
     color: COLORS.textPrimary,
   },
-  headerSubtitle: {
-    fontSize: FONT_SIZE.SM,
-    color: COLORS.textMuted,
-    marginTop: 2,
+  headerSpacer: {
+    width: 40,
   },
-  aiIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    borderRadius: BORDER_RADIUS.ROUND,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    gap: SPACING.xs,
-  },
-  aiDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.white,
-  },
-  aiText: {
-    fontSize: FONT_SIZE.XS,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-  content: {
-    flex: 1,
-  },
-  messagesList: {
-    flex: 1,
-  },
-  messagesContent: {
+  welcomeContainer: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
   },
-  messageContainer: {
-    marginBottom: SPACING.lg,
-  },
-  userMessage: {
-    alignItems: 'flex-end',
-  },
-  botMessage: {
-    alignItems: 'flex-start',
-  },
-  messageBubble: {
-    maxWidth: '80%',
-    borderRadius: BORDER_RADIUS.LG,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-  },
-  userBubble: {
-    backgroundColor: COLORS.primary,
-  },
-  botBubble: {
+  welcomeBubble: {
     backgroundColor: COLORS.white,
-    ...SHADOW_PRESETS.SMALL,
+    borderRadius: BORDER_RADIUS.XL,
+    padding: SPACING.lg,
+    ...SHADOW_PRESETS.MEDIUM,
   },
-  messageText: {
+  welcomeText: {
     fontSize: FONT_SIZE.MD,
-    lineHeight: 20,
-  },
-  userText: {
-    color: COLORS.white,
-  },
-  botText: {
     color: COLORS.textPrimary,
+    lineHeight: 22,
   },
-  timestamp: {
-    fontSize: FONT_SIZE.XS,
-    marginTop: SPACING.xs,
-  },
-  userTimestamp: {
-    color: COLORS.textMuted,
-    textAlign: 'right',
-  },
-  botTimestamp: {
-    color: COLORS.textMuted,
-    textAlign: 'left',
-  },
-  ingredientsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.xs,
-    marginTop: SPACING.sm,
-  },
-  ingredientChip: {
-    backgroundColor: COLORS.background,
-    borderRadius: BORDER_RADIUS.SM,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-  },
-  ingredientText: {
-    fontSize: FONT_SIZE.XS,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
-  suggestionsContainer: {
-    marginTop: SPACING.xl,
-    paddingTop: SPACING.xl,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  suggestionsTitle: {
-    fontSize: FONT_SIZE.MD,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
-  },
-  suggestionChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
-  },
-  suggestionChip: {
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.LG,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOW_PRESETS.SMALL,
-  },
-  suggestionText: {
-    fontSize: FONT_SIZE.SM,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
-  inputContainer: {
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+  searchContainer: {
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
+    paddingVertical: SPACING.md,
   },
-  inputWrapper: {
+  searchInputContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    backgroundColor: COLORS.background,
-    borderRadius: BORDER_RADIUS.LG,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    gap: SPACING.sm,
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.ROUND,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    gap: SPACING.md,
+    ...SHADOW_PRESETS.MEDIUM,
   },
-  textInput: {
+  searchInput: {
     flex: 1,
     fontSize: FONT_SIZE.MD,
     color: COLORS.textPrimary,
-    maxHeight: 100,
-    paddingVertical: SPACING.xs,
+    paddingVertical: 0,
   },
-  sendButton: {
-    width: 36,
-    height: 36,
-    borderRadius: BORDER_RADIUS.CIRCLE,
-    backgroundColor: COLORS.border,
-    justifyContent: 'center',
+  selectedSection: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  selectedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: SPACING.md,
   },
-  sendButtonActive: {
+  selectedTitle: {
+    fontSize: FONT_SIZE.MD,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  clearText: {
+    fontSize: FONT_SIZE.SM,
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
+  selectedList: {
+    paddingVertical: SPACING.sm,
+  },
+  selectedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.ROUND,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    gap: SPACING.sm,
+    ...SHADOW_PRESETS.SMALL,
+  },
+  chipText: {
+    fontSize: FONT_SIZE.SM,
+    color: COLORS.textPrimary,
+    fontWeight: '500',
+  },
+  chipRemove: {
+    padding: SPACING.xs,
+  },
+  mainContent: {
+    flex: 1,
+  },
+  resultsContainer: {
+    flex: 1,
+  },
+  resultsList: {
+    padding: SPACING.lg,
+  },
+  resultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.LG,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
+    ...SHADOW_PRESETS.SMALL,
+  },
+  resultContent: {
+    flex: 1,
+  },
+  resultName: {
+    fontSize: FONT_SIZE.MD,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
+  },
+  resultCategory: {
+    fontSize: FONT_SIZE.SM,
+    color: COLORS.textMuted,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.xxxl,
+  },
+  emptyText: {
+    fontSize: FONT_SIZE.LG,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.sm,
+  },
+  emptySubtext: {
+    fontSize: FONT_SIZE.MD,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+  },
+  emptyWelcome: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xl,
+  },
+  emptyWelcomeTitle: {
+    fontSize: FONT_SIZE.XXL,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.md,
+    textAlign: 'center',
+  },
+  emptyWelcomeText: {
+    fontSize: FONT_SIZE.MD,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  bottomContainer: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.lg,
+    backgroundColor: COLORS.white,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  findRecipesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.LG,
+    paddingVertical: SPACING.lg,
+    gap: SPACING.sm,
+    ...SHADOW_PRESETS.MEDIUM,
+  },
+  findRecipesButtonText: {
+    fontSize: FONT_SIZE.MD,
+    fontWeight: '600',
+    color: COLORS.white,
   },
 });
 

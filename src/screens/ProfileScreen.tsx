@@ -90,7 +90,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         navigation?.navigate('Home');
         break;
       case 'search':
-        navigation?.navigate('SearchResults');
+        navigation?.navigate('Search');
         break;
       case 'favorites':
         navigation?.navigate('Favorites');
@@ -112,9 +112,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   }, []);
 
   const handleAddPaymentMethod = useCallback(() => {
-    // TODO: Navigate to add payment method screen
-    Alert.alert('Add Payment Method', 'Add payment method functionality coming soon!');
-  }, []);
+    navigation?.navigate('PaymentMethods');
+  }, [navigation]);
 
   const handleSocialLogin = useCallback((provider: 'google' | 'facebook' | 'apple') => {
     // TODO: Implement social login
@@ -259,32 +258,45 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
   const renderPaymentMethods = useCallback(() => (
     <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Payment Methods</Text>
-        <TouchableOpacity onPress={handleAddPaymentMethod}>
-          <Ionicons name="add" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
+      <Text style={styles.sectionTitle}>Payment & Billing</Text>
       
-      {paymentMethods.map((method) => (
-        <View key={method.id} style={styles.paymentMethod}>
-          <View style={styles.paymentInfo}>
-            <Ionicons name={getCardIcon(method.type)} size={24} color={COLORS.textSecondary} />
-            <View style={styles.paymentDetails}>
-              <Text style={styles.paymentType}>
-                {method.type.toUpperCase()} •••• {method.lastFour}
+      {/* Payment Methods Card */}
+      <TouchableOpacity style={styles.paymentMethodsCard} onPress={handleAddPaymentMethod}>
+        <View style={styles.paymentMethodsHeader}>
+          <View style={styles.paymentMethodsInfo}>
+            <Ionicons name="card" size={24} color={COLORS.primary} />
+            <View style={styles.paymentMethodsText}>
+              <Text style={styles.paymentMethodsTitle}>Payment Methods</Text>
+              <Text style={styles.paymentMethodsSubtitle}>
+                {paymentMethods.length} card{paymentMethods.length !== 1 ? 's' : ''} added
               </Text>
-              <Text style={styles.paymentExpiry}>Expires {method.expiryDate}</Text>
             </View>
           </View>
-          
-          {method.isDefault && (
-            <View style={styles.defaultBadge}>
-              <Text style={styles.defaultBadgeText}>Default</Text>
-            </View>
-          )}
+          <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
         </View>
-      ))}
+        
+        {/* Preview of cards */}
+        {paymentMethods.length > 0 && (
+          <View style={styles.paymentMethodsPreview}>
+            {paymentMethods.slice(0, 2).map((method, index) => (
+              <View key={method.id} style={styles.paymentMethodPreview}>
+                <Ionicons name={getCardIcon(method.type)} size={16} color={COLORS.textSecondary} />
+                <Text style={styles.paymentMethodPreviewText}>
+                  •••• {method.lastFour}
+                </Text>
+                {method.isDefault && (
+                  <View style={styles.defaultBadgeSmall}>
+                    <Text style={styles.defaultBadgeSmallText}>Default</Text>
+                  </View>
+                )}
+              </View>
+            ))}
+            {paymentMethods.length > 2 && (
+              <Text style={styles.moreCardsText}>+{paymentMethods.length - 2} more</Text>
+            )}
+          </View>
+        )}
+      </TouchableOpacity>
     </View>
   ), [paymentMethods, handleAddPaymentMethod, getCardIcon]);
 
@@ -621,34 +633,68 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.textPrimary,
   },
-  paymentMethod: {
+  paymentMethodsCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.XL,
+    padding: SPACING.lg,
+    ...SHADOW_PRESETS.MEDIUM,
+  },
+  paymentMethodsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.LG,
-    padding: SPACING.lg,
     marginBottom: SPACING.md,
-    ...SHADOW_PRESETS.SMALL,
   },
-  paymentInfo: {
+  paymentMethodsInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  paymentDetails: {
+  paymentMethodsText: {
     marginLeft: SPACING.md,
     flex: 1,
   },
-  paymentType: {
-    fontSize: FONT_SIZE.MD,
+  paymentMethodsTitle: {
+    fontSize: FONT_SIZE.LG,
     fontWeight: '600',
     color: COLORS.textPrimary,
     marginBottom: SPACING.xs,
   },
-  paymentExpiry: {
+  paymentMethodsSubtitle: {
     fontSize: FONT_SIZE.SM,
     color: COLORS.textMuted,
+  },
+  paymentMethodsPreview: {
+    gap: SPACING.sm,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  paymentMethodPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  paymentMethodPreviewText: {
+    fontSize: FONT_SIZE.SM,
+    color: COLORS.textSecondary,
+    flex: 1,
+  },
+  defaultBadgeSmall: {
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.XS,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+  },
+  defaultBadgeSmallText: {
+    fontSize: FONT_SIZE.XS,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  moreCardsText: {
+    fontSize: FONT_SIZE.SM,
+    color: COLORS.textMuted,
+    fontStyle: 'italic',
   },
   defaultBadge: {
     backgroundColor: COLORS.primary,

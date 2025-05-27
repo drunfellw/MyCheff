@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -11,8 +11,15 @@ import SearchBar from '../components/SearchBar';
 import ScrollMenu from '../components/ScrollMenu';
 import RecipeCard from '../components/RecipeCard';
 import NavigationBar from '../components/NavigationBar';
-import { COLORS, SPACING, FONT_SIZE, DEFAULTS } from '../constants';
+import { 
+  COLORS, 
+  COMPONENT_SPACING, 
+  FONT_SIZE, 
+  DEFAULTS,
+  SPACING 
+} from '../constants';
 import { CATEGORIES_DATA } from '../services/mockData';
+
 interface Recipe {
   id: string;
   title?: string;
@@ -32,96 +39,103 @@ interface HomeScreenProps {
   };
 }
 
+// Mock recipe data - In production, this would come from API
+const MOCK_RECIPES: Recipe[] = [
+  {
+    id: 'recipe-1',
+    title: 'Soğuk Amerikano',
+    time: '3 min',
+    category: 'Beverages',
+    image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=300&h=200&fit=crop',
+    rating: '4.8',
+    isFavorite: false,
+  },
+  {
+    id: 'recipe-2', 
+    title: 'Pancake Stack',
+    time: '15 min',
+    category: 'Breakfast',
+    image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=300&h=200&fit=crop',
+    rating: '4.9',
+    isFavorite: true,
+  },
+  {
+    id: 'recipe-3',
+    title: 'Avocado Toast',
+    time: '5 min', 
+    category: 'Breakfast',
+    image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=300&h=200&fit=crop',
+    rating: '4.7',
+    isFavorite: false,
+  },
+  {
+    id: 'recipe-4',
+    title: 'French Omelette',
+    time: '8 min',
+    category: 'Breakfast', 
+    image: 'https://images.unsplash.com/photo-1582169296194-754c5a464303?w=300&h=200&fit=crop',
+    rating: '4.6',
+    isFavorite: false,
+  },
+  {
+    id: 'recipe-5',
+    title: 'Berry Smoothie',
+    time: '2 min',
+    category: 'Beverages',
+    image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433a?w=300&h=200&fit=crop', 
+    rating: '4.8',
+    isFavorite: true,
+  },
+  {
+    id: 'recipe-6',
+    title: 'Granola Bowl',
+    time: '5 min',
+    category: 'Breakfast',
+    image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=300&h=200&fit=crop',
+    rating: '4.5',
+    isFavorite: false,
+  }
+];
+
 /**
  * HomeScreen Component
  * 
- * Ana sayfa ekranı - Figma tasarımına tam uygun
- * SearchBar, kategoriler, tarif kartları ve navigation bar içerir
+ * Professional home screen following design system standards
+ * Features search, categories, recipe grid, and navigation
  */
-const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('1'); // Breakfast seçili
+const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
+  const [selectedCategory, setSelectedCategory] = useState<string>('1'); // Breakfast selected
   const [activeTab, setActiveTab] = useState<string>('home');
-  const [recipes, setRecipes] = useState<Recipe[]>([
-    {
-      id: 'recipe-1',
-      title: 'Soğuk Amerikano',
-      time: '3 min',
-      category: 'Beverages',
-      image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=300&h=200&fit=crop',
-      rating: '4.8',
-      isFavorite: false,
-    },
-    {
-      id: 'recipe-2', 
-      title: 'Pancake Stack',
-      time: '15 min',
-      category: 'Breakfast',
-      image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=300&h=200&fit=crop',
-      rating: '4.9',
-      isFavorite: true,
-    },
-    {
-      id: 'recipe-3',
-      title: 'Avocado Toast',
-      time: '5 min', 
-      category: 'Breakfast',
-      image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=300&h=200&fit=crop',
-      rating: '4.7',
-      isFavorite: false,
-    },
-    {
-      id: 'recipe-4',
-      title: 'French Omelette',
-      time: '8 min',
-      category: 'Breakfast', 
-      image: 'https://images.unsplash.com/photo-1582169296194-754c5a464303?w=300&h=200&fit=crop',
-      rating: '4.6',
-      isFavorite: false,
-    },
-    {
-      id: 'recipe-5',
-      title: 'Berry Smoothie',
-      time: '2 min',
-      category: 'Beverages',
-      image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433a?w=300&h=200&fit=crop', 
-      rating: '4.8',
-      isFavorite: true,
-    },
-    {
-      id: 'recipe-6',
-      title: 'Granola Bowl',
-      time: '5 min',
-      category: 'Breakfast',
-      image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=300&h=200&fit=crop',
-      rating: '4.5',
-      isFavorite: false,
-    }
-  ]);
+  const [recipes, setRecipes] = useState<Recipe[]>(MOCK_RECIPES);
+  
   const insets = useSafeAreaInsets();
 
-  // Recipe grid için layout hesaplama
-  const numColumns = 2;
-  const cardSpacing = SPACING.lg;
-  const horizontalPadding = SPACING.lg * 2;
-  const availableWidth = screenWidth - horizontalPadding - cardSpacing;
-  const cardWidth = availableWidth / numColumns;
+  // Grid layout calculations using design system
+  const gridLayout = useMemo(() => {
+    const numColumns = COMPONENT_SPACING.GRID.COLUMNS_PHONE;
+    const horizontalPadding = COMPONENT_SPACING.GRID.HORIZONTAL_PADDING * 2;
+    const spacing = COMPONENT_SPACING.GRID.SPACING;
+    const availableWidth = screenWidth - horizontalPadding - spacing;
+    const cardWidth = availableWidth / numColumns;
+    
+    return { numColumns, cardWidth, spacing };
+  }, []);
 
-  const handleSearchPress = (): void => {
-    // ChatScreen'e yönlendir
+  const handleSearchPress = useCallback((): void => {
     navigation?.navigate('Chat');
-  };
+  }, [navigation]);
 
-  const handleCategorySelect = (categoryId: string): void => {
+  const handleCategorySelect = useCallback((categoryId: string): void => {
     setSelectedCategory(categoryId);
     console.log('Category selected:', categoryId);
-  };
+  }, []);
 
-  const handleRecipePress = (recipe: Recipe): void => {
+  const handleRecipePress = useCallback((recipe: Recipe): void => {
     navigation?.navigate('RecipeDetail');
     console.log('Recipe pressed:', recipe.title);
-  };
+  }, [navigation]);
 
-  const handleFavoritePress = (recipeId: string): void => {
+  const handleFavoritePress = useCallback((recipeId: string): void => {
     setRecipes(prevRecipes => 
       prevRecipes.map(recipe => 
         recipe.id === recipeId 
@@ -130,9 +144,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       )
     );
     console.log('Favorite toggled for recipe:', recipeId);
-  };
+  }, []);
 
-  const handleTabPress = (tabId: string): void => {
+  const handleTabPress = useCallback((tabId: string): void => {
     setActiveTab(tabId);
     
     // Navigation logic
@@ -141,7 +155,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         // Already on home screen
         break;
       case 'search':
-        navigation?.navigate('SearchResults');
+        navigation?.navigate('Search');
         break;
       case 'favorites':
         navigation?.navigate('Favorites');
@@ -152,15 +166,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       default:
         console.log('Unknown tab pressed:', tabId);
     }
-  };
+  }, [navigation]);
 
-  // Seçili kategoriye göre inspiration text
-  const selectedCategoryData = CATEGORIES_DATA.find(cat => cat.id === selectedCategory);
-  const categoryName = selectedCategoryData?.name?.toLowerCase() || 'breakfast';
-  const inspirationText = `${DEFAULTS.INSPIRATION_TEXT.COUNT} types of ${categoryName} ${DEFAULTS.INSPIRATION_TEXT.SUFFIX}`;
+  // Dynamic inspiration text based on selected category
+  const inspirationText = useMemo(() => {
+    const selectedCategoryData = CATEGORIES_DATA.find(cat => cat.id === selectedCategory);
+    const categoryName = selectedCategoryData?.name?.toLowerCase() || 'breakfast';
+    return `${DEFAULTS.INSPIRATION_TEXT.COUNT} types of ${categoryName} ${DEFAULTS.INSPIRATION_TEXT.SUFFIX}`;
+  }, [selectedCategory]);
 
-  const renderRecipeGrid = () => {
+  const renderRecipeGrid = useCallback(() => {
     const rows: React.ReactElement[] = [];
+    const { numColumns } = gridLayout;
     
     for (let i = 0; i < recipes.length; i += numColumns) {
       const rowRecipes = recipes.slice(i, i + numColumns);
@@ -180,7 +197,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     }
     
     return rows;
-  };
+  }, [recipes, gridLayout, handleRecipePress, handleFavoritePress]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -220,7 +237,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       />
     </View>
   );
-};
+});
+
+HomeScreen.displayName = 'HomeScreen';
 
 const styles = StyleSheet.create({
   container: {
@@ -231,26 +250,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100, // NavigationBar için space
+    paddingBottom: COMPONENT_SPACING.NAVIGATION.HEIGHT + SPACING.lg,
   },
   inspirationText: {
     fontSize: FONT_SIZE.MD,
     fontWeight: '500',
     color: COLORS.textPrimary,
-    lineHeight: 18,
-    marginLeft: SPACING.lg,
+    lineHeight: FONT_SIZE.LG + 2,
+    marginLeft: COMPONENT_SPACING.GRID.HORIZONTAL_PADDING,
     marginTop: SPACING.xl,
     marginBottom: SPACING.sm,
   },
   recipeGrid: {
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: COMPONENT_SPACING.GRID.HORIZONTAL_PADDING,
     gap: SPACING.xl,
   },
   recipeRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: SPACING.xl,
+    gap: COMPONENT_SPACING.GRID.SPACING,
   },
   bottomSpacing: {
     height: SPACING.xl,

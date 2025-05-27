@@ -1,4 +1,20 @@
 import type { ThemeColors, Spacing, NavigationTab, StorageKeys } from '../types';
+import { Dimensions, PixelRatio } from 'react-native';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+// Dynamic Font Scaling
+const scale = screenWidth / 375; // iPhone X base width
+const normalize = (size: number): number => {
+  const newSize = size * scale;
+  if (PixelRatio.get() >= 3 && screenWidth >= 414) {
+    return Math.round(PixelRatio.roundToNearestPixel(newSize)) - 2;
+  } else if (PixelRatio.get() >= 3) {
+    return Math.round(PixelRatio.roundToNearestPixel(newSize));
+  } else {
+    return Math.round(PixelRatio.roundToNearestPixel(newSize)) + 1;
+  }
+};
 
 // Application Constants
 export const APP_CONFIG = {
@@ -47,7 +63,7 @@ export const COLORS: ThemeColors = {
   error: '#F44336',
 } as const;
 
-// Spacing System
+// Spacing System - Professional Design System
 export const SPACING: Spacing = {
   xs: 4,
   sm: 8,
@@ -56,6 +72,48 @@ export const SPACING: Spacing = {
   xl: 24,
   xxl: 32,
   xxxl: 48,
+} as const;
+
+// Component Specific Spacing
+export const COMPONENT_SPACING = {
+  // SearchBar
+  SEARCH_BAR: {
+    HORIZONTAL: SPACING.lg,
+    VERTICAL: SPACING.sm,
+    ICON_SIZE: 24,
+    FILTER_BUTTON_SIZE: 40,
+    GAP: SPACING.md,
+  },
+  
+  // Navigation
+  NAVIGATION: {
+    HEIGHT: 80,
+    ICON_SIZE: 24,
+    PADDING: SPACING.lg,
+  },
+  
+  // Cards
+  CARD: {
+    PADDING: SPACING.md,
+    MARGIN: SPACING.sm,
+    IMAGE_HEIGHT: 120,
+    BORDER_RADIUS: SPACING.md,
+  },
+  
+  // Grid Layout
+  GRID: {
+    COLUMNS_PHONE: 2,
+    COLUMNS_TABLET: 3,
+    SPACING: SPACING.lg,
+    HORIZONTAL_PADDING: SPACING.lg,
+  },
+  
+  // Modal
+  MODAL: {
+    PADDING: SPACING.xl,
+    BORDER_RADIUS: SPACING.xl,
+    BACKDROP_OPACITY: 0.5,
+  },
 } as const;
 
 // Typography
@@ -67,15 +125,16 @@ export const FONT_FAMILY = {
 } as const;
 
 export const FONT_SIZE = {
-  XS: 10,
-  SM: 12,
-  MD: 14,
-  LG: 16,
-  XL: 18,
-  XXL: 20,
-  XXXL: 24,
-  TITLE: 28,
-  LARGE_TITLE: 32,
+  XS: normalize(10),
+  SM: normalize(12),
+  MD: normalize(14),
+  LG: normalize(16),
+  XL: normalize(18),
+  XXL: normalize(20),
+  XXXL: normalize(24),
+  TITLE: normalize(28),
+  LARGE_TITLE: normalize(32),
+  COOKING_STEP: normalize(18), // Step-by-step için özel boyut
 } as const;
 
 export const LINE_HEIGHT = {
@@ -94,7 +153,7 @@ export const LINE_HEIGHT = {
 export const NAVIGATION_TABS: NavigationTab[] = [
   { 
     id: 'home', 
-    label: 'Search', 
+    label: 'Home', 
     icon: 'home',
   },
   { 
@@ -104,12 +163,12 @@ export const NAVIGATION_TABS: NavigationTab[] = [
   },
   { 
     id: 'favorites', 
-    label: 'Favorite', 
+    label: 'Favorites', 
     icon: 'heart',
   },
   { 
     id: 'profile', 
-    label: 'Settings', 
+    label: 'Profile', 
     icon: 'person',
   },
 ] as const;
@@ -150,6 +209,11 @@ export const ANIMATION_DURATION = {
   NORMAL: 200,
   SLOW: 300,
   VERY_SLOW: 500,
+  TYPEWRITER: {
+    TYPE_SPEED: 40,
+    DELETE_SPEED: 20,
+    PAUSE_DURATION: 1200,
+  },
 } as const;
 
 // Component Z-Index
@@ -224,4 +288,10 @@ export const DEFAULTS = {
     COUNT: 1253,
     SUFFIX: 'inspiration',
   },
+  TYPEWRITER_TEXTS: [
+    'Search recipes by what you have',
+    'Discover dishes you can cook now',
+    'What would you like to cook today?',
+    'Find recipes with your ingredients',
+  ],
 } as const; 

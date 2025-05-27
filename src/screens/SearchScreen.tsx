@@ -11,6 +11,7 @@ import {
   Platform,
   Animated,
   Dimensions,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,6 +50,15 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const searchInputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Keep keyboard closed on screen load
+  useEffect(() => {
+    Keyboard.dismiss();
+    // Prevent auto-focus
+    if (searchInputRef.current) {
+      searchInputRef.current.blur();
+    }
+  }, []);
 
   // Mock data - Backend'den gelecek
   const mockIngredients: Ingredient[] = useMemo(() => [
@@ -192,34 +202,66 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={insets.top}
       >
-        {/* Header */}
+        {/* Header with SearchBar Style */}
         <View style={[styles.header, { paddingTop: SPACING.sm }]}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation?.goBack()}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>What's available?</Text>
-            <Text style={styles.headerSubtitle}>
-              {selectedIngredients.length > 0 
-                ? `${selectedIngredients.length} ingredient${selectedIngredients.length > 1 ? 's' : ''} selected`
-                : 'Start typing to search ingredients'
-              }
-            </Text>
-          </View>
-
-          {selectedIngredients.length > 0 && (
+          <View style={styles.searchBarContainer}>
+            {/* Back Button */}
             <TouchableOpacity 
-              style={styles.clearButton}
-              onPress={handleClearAll}
+              style={styles.backButton}
+              onPress={() => navigation?.goBack()}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.clearText}>Clear</Text>
+              <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
             </TouchableOpacity>
+
+            {/* Search Input */}
+            <View style={styles.searchBarInput}>
+              <TextInput
+                ref={searchInputRef}
+                style={styles.searchInput}
+                placeholder="Search ingredients..."
+                placeholderTextColor={COLORS.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="words"
+                autoCorrect={false}
+                autoFocus={false}
+                returnKeyType="search"
+                blurOnSubmit={false}
+              />
+              
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <Ionicons name="hourglass" size={20} color={COLORS.textMuted} />
+                </View>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.filterButtonInside}
+                  onPress={() => {/* TODO: Filter modal */}}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <View style={styles.filterIconContainer}>
+                    <Ionicons name="options" size={20} color={COLORS.textPrimary} />
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Selected Count */}
+          {selectedIngredients.length > 0 && (
+            <View style={styles.selectedCountContainer}>
+              <Text style={styles.selectedCountText}>
+                {selectedIngredients.length} ingredient{selectedIngredients.length > 1 ? 's' : ''} selected
+              </Text>
+              <TouchableOpacity 
+                style={styles.clearButton}
+                onPress={handleClearAll}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.clearText}>Clear</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
 
@@ -272,27 +314,9 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
           )}
         </View>
 
-        {/* Search Input */}
-        <View style={[styles.inputContainer, { paddingBottom: insets.bottom + SPACING.md }]}>
-          <View style={styles.inputWrapper}>
-            <Ionicons name="search" size={20} color={COLORS.textMuted} />
-            <TextInput
-              ref={searchInputRef}
-              style={styles.searchInput}
-              placeholder="Search ingredients..."
-              placeholderTextColor={COLORS.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="words"
-              autoCorrect={false}
-              returnKeyType="search"
-            />
-            {isLoading && (
-              <Ionicons name="hourglass" size={20} color={COLORS.textMuted} />
-            )}
-          </View>
-
-          {selectedIngredients.length > 0 && (
+        {/* Find Recipes Button */}
+        {selectedIngredients.length > 0 && (
+          <View style={[styles.bottomButtonContainer, { paddingBottom: insets.bottom + SPACING.md }]}>
             <TouchableOpacity
               style={styles.searchButton}
               onPress={handleSearchRecipes}
@@ -301,8 +325,8 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
               <Ionicons name="restaurant" size={20} color={COLORS.white} />
               <Text style={styles.searchButtonText}>Find Recipes</Text>
             </TouchableOpacity>
-          )}
-        </View>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -317,29 +341,77 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: SPACING.lg,
     paddingBottom: SPACING.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    gap: SPACING.md,
+  },
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
   },
   backButton: {
-    padding: SPACING.sm,
-    marginRight: SPACING.sm,
+    width: 40,
+    height: 40,
+    borderRadius: BORDER_RADIUS.CIRCLE,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOW_PRESETS.SMALL,
   },
-  headerContent: {
+  searchBarInput: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.ROUND,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    gap: SPACING.md,
+    ...SHADOW_PRESETS.MEDIUM,
   },
-  headerTitle: {
-    fontSize: FONT_SIZE.XL,
-    fontWeight: '600',
+  searchInput: {
+    flex: 1,
+    fontSize: FONT_SIZE.MD,
     color: COLORS.textPrimary,
-    marginBottom: SPACING.xs,
+    paddingVertical: 0,
   },
-  headerSubtitle: {
+  filterButtonInside: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: BORDER_RADIUS.CIRCLE,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  selectedCountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.LG,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  selectedCountText: {
     fontSize: FONT_SIZE.SM,
     color: COLORS.textMuted,
+    fontWeight: '500',
   },
   clearButton: {
     padding: SPACING.sm,
@@ -443,28 +515,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  inputContainer: {
+  bottomButtonContainer: {
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    gap: SPACING.md,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-    borderRadius: BORDER_RADIUS.ROUND,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    gap: SPACING.md,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: FONT_SIZE.MD,
-    color: COLORS.textPrimary,
-    paddingVertical: 0,
   },
   searchButton: {
     flexDirection: 'row',

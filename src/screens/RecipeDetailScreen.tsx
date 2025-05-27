@@ -31,7 +31,6 @@ interface Instruction {
   id: string;
   step: number;
   description: string;
-  duration?: string;
 }
 
 interface NutritionInfo {
@@ -127,13 +126,13 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
       { id: '10', name: 'Fresh Thyme', amount: '1', unit: 'tsp' },
     ],
     instructions: [
-      { id: '1', step: 1, description: 'Heat the vegetable broth in a saucepan and keep it warm over low heat.', duration: '2 min' },
-      { id: '2', step: 2, description: 'In a large pan, heat olive oil and butter. Add diced onion and cook until translucent.', duration: '3 min' },
-      { id: '3', step: 3, description: 'Add minced garlic and sliced mushrooms. Cook until mushrooms are golden brown.', duration: '5 min' },
-      { id: '4', step: 4, description: 'Add arborio rice and stir for 2 minutes until the grains are well coated.', duration: '2 min' },
-      { id: '5', step: 5, description: 'Pour in white wine and stir until absorbed.', duration: '2 min' },
-      { id: '6', step: 6, description: 'Add warm broth one ladle at a time, stirring constantly until absorbed before adding more.', duration: '20 min' },
-      { id: '7', step: 7, description: 'Stir in grated parmesan cheese and fresh thyme. Season with salt and pepper.', duration: '1 min' },
+      { id: '1', step: 1, description: 'Heat the vegetable broth in a saucepan and keep it warm over low heat.' },
+      { id: '2', step: 2, description: 'In a large pan, heat olive oil and butter. Add diced onion and cook until translucent.' },
+      { id: '3', step: 3, description: 'Add minced garlic and sliced mushrooms. Cook until mushrooms are golden brown.' },
+      { id: '4', step: 4, description: 'Add arborio rice and stir until the grains are well coated.' },
+      { id: '5', step: 5, description: 'Pour in white wine and stir until absorbed.' },
+      { id: '6', step: 6, description: 'Add warm broth one ladle at a time, stirring constantly until absorbed before adding more.' },
+      { id: '7', step: 7, description: 'Stir in grated parmesan cheese and fresh thyme. Season with salt and pepper.' },
     ],
     nutrition: {
       calories: 385,
@@ -171,11 +170,8 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
 
   // Start cooking
   const handleStartCooking = useCallback(() => {
-    navigation?.navigate('CookingSteps', {
-      instructions: recipe.instructions,
-      recipeName: recipe.title
-    });
-  }, [recipe, navigation]);
+    navigation?.navigate('CookingSteps');
+  }, [navigation]);
 
   // Handle navigation bar tab press
   const handleNavTabPress = useCallback((tabId: string) => {
@@ -230,9 +226,10 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
   const renderFullScreenModal = () => (
     <Modal
       visible={isFullScreenVisible}
-      transparent={true}
+      transparent={false}
       animationType="fade"
       onRequestClose={() => setIsFullScreenVisible(false)}
+      statusBarTranslucent={true}
     >
       <View style={styles.fullScreenContainer}>
         <StatusBar hidden />
@@ -246,11 +243,13 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
         <FlatList
           data={recipe.media}
           renderItem={({ item }) => (
-            <Image
-              source={{ uri: item.url }}
-              style={styles.fullScreenImage}
-              resizeMode="contain"
-            />
+            <View style={styles.fullScreenImageContainer}>
+              <Image
+                source={{ uri: item.url }}
+                style={styles.fullScreenImage}
+                resizeMode="contain"
+              />
+            </View>
           )}
           horizontal
           pagingEnabled
@@ -287,12 +286,6 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
       </View>
       <View style={styles.instructionContent}>
         <Text style={styles.instructionText}>{instruction.description}</Text>
-        {instruction.duration && (
-          <View style={styles.durationBadge}>
-            <Ionicons name="time-outline" size={12} color={COLORS.textMuted} />
-            <Text style={styles.durationText}>{instruction.duration}</Text>
-          </View>
-        )}
       </View>
     </View>
   ), []);
@@ -537,24 +530,34 @@ const styles = StyleSheet.create({
   },
   paginationContainer: {
     position: 'absolute',
-    bottom: SPACING.lg,
+    bottom: SPACING.xl,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: SPACING.sm,
+    zIndex: 5,
   },
   paginationDot: {
-    width: 8,
-    height: 8,
+    width: 10,
+    height: 10,
     borderRadius: BORDER_RADIUS.CIRCLE,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.2)',
   },
   paginationDotActive: {
     backgroundColor: COLORS.white,
-    width: 10,
-    height: 10,
+    width: 12,
+    height: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.2)',
+    shadowColor: COLORS.shadowDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   recipeInfo: {
@@ -733,16 +736,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.MD,
     color: COLORS.textPrimary,
     lineHeight: 22,
-    marginBottom: SPACING.sm,
-  },
-  durationBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  durationText: {
-    fontSize: FONT_SIZE.SM,
-    color: COLORS.textMuted,
   },
   nutritionGrid: {
     gap: SPACING.md,
@@ -785,7 +778,7 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.md,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    marginBottom: 80,
+    marginBottom: 120, // NavigationBar yüksekliği + extra space
   },
   startCookingButton: {
     flexDirection: 'row',
@@ -804,25 +797,33 @@ const styles = StyleSheet.create({
   },
   fullScreenContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
   },
   fullScreenCloseButton: {
     position: 'absolute',
-    top: 50,
+    top: 60,
     right: 20,
     zIndex: 10,
     width: 50,
     height: 50,
     borderRadius: BORDER_RADIUS.CIRCLE,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  fullScreenImageContainer: {
+    width: screenWidth,
+    height: screenHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000000',
   },
   fullScreenImage: {
     width: screenWidth,
     height: screenHeight,
+    backgroundColor: '#000000',
   },
 });
 

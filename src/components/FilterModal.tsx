@@ -12,7 +12,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
+import { 
+  COLORS, 
+  COMPONENT_SPACING, 
+  FONT_SIZE, 
+  BORDER_RADIUS, 
+  SHADOW_PRESETS,
+  SPACING 
+} from '../constants';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -47,10 +54,8 @@ interface FilterState {
 /**
  * FilterModal Component
  * 
- * Modern bottom sheet filter modal
- * Swipe-to-dismiss functionality
- * Category-based filtering system
- * Backend-ready filter structure
+ * Professional bottom sheet filter modal with improved swipe-to-dismiss
+ * Features smooth animations and optimized gesture handling
  */
 const FilterModal: React.FC<FilterModalProps> = ({
   visible,
@@ -62,6 +67,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const translateY = useRef(new Animated.Value(screenHeight)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const dragY = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [scrollEnabled, setScrollEnabled] = React.useState(true);
 
   // Mock data - Backend'den gelecek
   const defaultFilters: FilterState = useMemo(() => ({
@@ -73,48 +80,52 @@ const FilterModal: React.FC<FilterModalProps> = ({
       { id: '5', name: 'Desserts', icon: 'ice-cream', isSelected: false },
       { id: '6', name: 'Beverages', icon: 'wine', isSelected: false },
     ],
-    difficulty: [
-      { id: 'easy', label: 'Easy', value: 'easy', isSelected: false },
-      { id: 'medium', label: 'Medium', value: 'medium', isSelected: false },
-      { id: 'hard', label: 'Hard', value: 'hard', isSelected: false },
-    ],
+    difficulty: [],
     cookingTime: [
       { id: 'quick', label: 'Under 15 min', value: '0-15', isSelected: false },
       { id: 'medium', label: '15-30 min', value: '15-30', isSelected: false },
       { id: 'long', label: '30+ min', value: '30+', isSelected: false },
     ],
-    dietary: [
-      { id: 'vegetarian', label: 'Vegetarian', value: 'vegetarian', isSelected: false },
-      { id: 'vegan', label: 'Vegan', value: 'vegan', isSelected: false },
-      { id: 'gluten-free', label: 'Gluten Free', value: 'gluten-free', isSelected: false },
-      { id: 'dairy-free', label: 'Dairy Free', value: 'dairy-free', isSelected: false },
-    ],
+    dietary: [],
   }), []);
 
   const [filters, setFilters] = React.useState<FilterState>(
     initialFilters || defaultFilters
   );
 
-  // Pan responder for drag to close
+  // Improved pan responder for handle area only
   const panResponder = useRef(
     PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        return Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+        const { dy, dx } = gestureState;
+        // Only respond to vertical gestures that are more significant than horizontal
+        return Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 10;
+      },
+      onPanResponderGrant: () => {
+        setScrollEnabled(false); // Disable scroll when dragging
       },
       onPanResponderMove: (evt, gestureState) => {
+        // Only allow downward drag
         if (gestureState.dy > 0) {
           dragY.setValue(gestureState.dy);
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
-        if (gestureState.dy > 100 || gestureState.vy > 0.5) {
-          // Close modal
+        setScrollEnabled(true); // Re-enable scroll
+        
+        const { dy, vy } = gestureState;
+        const shouldClose = dy > 150 || vy > 0.8;
+        
+        if (shouldClose) {
           onClose();
         } else {
-          // Snap back
+          // Snap back to original position
           Animated.spring(dragY, {
             toValue: 0,
             useNativeDriver: true,
+            tension: 100,
+            friction: 8,
           }).start();
         }
       },
@@ -132,7 +143,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
           useNativeDriver: true,
         }),
         Animated.timing(backdropOpacity, {
-          toValue: 0.5,
+          toValue: COMPONENT_SPACING.MODAL.BACKDROP_OPACITY,
           duration: 300,
           useNativeDriver: true,
         }),
@@ -195,11 +206,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
   // Count selected filters
   const selectedCount = useMemo(() => {
     const categoryCount = filters.categories.filter(cat => cat.isSelected).length;
-    const difficultyCount = filters.difficulty.filter(opt => opt.isSelected).length;
     const timeCount = filters.cookingTime.filter(opt => opt.isSelected).length;
-    const dietaryCount = filters.dietary.filter(opt => opt.isSelected).length;
     
-    return categoryCount + difficultyCount + timeCount + dietaryCount;
+    return categoryCount + timeCount;
   }, [filters]);
 
   // Render category item
@@ -285,10 +294,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
             paddingBottom: insets.bottom + SPACING.lg,
           },
         ]}
-        {...panResponder.panHandlers}
       >
-        {/* Handle */}
-        <View style={styles.handle} />
+        {/* Draggable Handle Area */}
+        <View style={styles.handleArea} {...panResponder.panHandlers}>
+          <View style={styles.handle} />
+        </View>
 
         {/* Header */}
         <View style={styles.header}>
@@ -307,15 +317,12 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
         {/* Content */}
         <ScrollView
+          ref={scrollViewRef}
           style={styles.content}
           showsVerticalScrollIndicator={false}
           bounces={true}
-          onScrollEndDrag={(event) => {
-            // Eğer yukarı kaydırma hızı yeterince fazlaysa modal'ı kapat
-            if (event.nativeEvent.velocity && event.nativeEvent.velocity.y < -1000) {
-              onClose();
-            }
-          }}
+          scrollEnabled={scrollEnabled}
+          contentContainerStyle={styles.scrollContent}
         >
           {/* Categories */}
           <View style={styles.section}>
@@ -325,27 +332,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
             </View>
           </View>
 
-          {/* Difficulty */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Difficulty</Text>
-            <View style={styles.filterOptionsRow}>
-              {filters.difficulty.map(option => renderFilterOption(option, 'difficulty'))}
-            </View>
-          </View>
-
           {/* Cooking Time */}
-          <View style={styles.section}>
+          <View style={[styles.section, styles.lastSection]}>
             <Text style={styles.sectionTitle}>Cooking Time</Text>
             <View style={styles.filterOptionsRow}>
               {filters.cookingTime.map(option => renderFilterOption(option, 'cookingTime'))}
-            </View>
-          </View>
-
-          {/* Dietary Preferences */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Dietary Preferences</Text>
-            <View style={styles.filterOptionsColumn}>
-              {filters.dietary.map(option => renderFilterOption(option, 'dietary'))}
             </View>
           </View>
         </ScrollView>
@@ -381,25 +372,27 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: BORDER_RADIUS.XXL,
-    borderTopRightRadius: BORDER_RADIUS.XXL,
+    borderTopLeftRadius: COMPONENT_SPACING.MODAL.BORDER_RADIUS,
+    borderTopRightRadius: COMPONENT_SPACING.MODAL.BORDER_RADIUS,
     maxHeight: screenHeight * 0.85,
     ...SHADOW_PRESETS.LARGE,
+  },
+  handleArea: {
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   handle: {
     width: 40,
     height: 4,
     backgroundColor: COLORS.border,
     borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: SPACING.md,
-    marginBottom: SPACING.lg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.xl,
+    paddingHorizontal: COMPONENT_SPACING.MODAL.PADDING,
     paddingBottom: SPACING.lg,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -428,12 +421,17 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: SPACING.xl,
+  },
+  scrollContent: {
+    paddingHorizontal: COMPONENT_SPACING.MODAL.PADDING,
   },
   section: {
     paddingVertical: SPACING.xl,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+  },
+  lastSection: {
+    borderBottomWidth: 0,
   },
   sectionTitle: {
     fontSize: FONT_SIZE.LG,
@@ -502,7 +500,7 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   footer: {
-    paddingHorizontal: SPACING.xl,
+    paddingHorizontal: COMPONENT_SPACING.MODAL.PADDING,
     paddingTop: SPACING.lg,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
@@ -513,6 +511,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    ...SHADOW_PRESETS.MEDIUM,
   },
   applyButtonText: {
     fontSize: FONT_SIZE.LG,
@@ -521,4 +520,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default React.memo(FilterModal); 
+export default FilterModal; 

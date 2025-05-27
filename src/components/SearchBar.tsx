@@ -1,7 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS, DEFAULTS } from '../constants';
+import { 
+  COLORS, 
+  COMPONENT_SPACING, 
+  FONT_SIZE, 
+  BORDER_RADIUS, 
+  SHADOW_PRESETS, 
+  DEFAULTS,
+  ANIMATION_DURATION 
+} from '../constants';
 import FilterModal from './FilterModal';
 
 interface SearchBarProps {
@@ -13,50 +21,64 @@ interface SearchBarProps {
 /**
  * SearchBar Component
  * 
- * Figma tasarımına uygun search bar component'i
- * Bu bir buton olarak çalışır, gerçek input değil
- * Typewriter animasyonu ile secondary text
+ * Professional search bar component following design system
+ * Features typewriter animation with configurable texts
+ * Includes filter functionality
  * 
  * @param {SearchBarProps} props - Component props
  */
-const SearchBar = ({ onPress, onFiltersApplied, style }: SearchBarProps): React.JSX.Element => {
+const SearchBar = React.memo<SearchBarProps>(({ onPress, onFiltersApplied, style }) => {
   const [displayText, setDisplayText] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [typeIndex, setTypeIndex] = useState<number>(0);
   const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
   
-  const typewriterTexts: string[] = [
-    'Search recipes by what you have',
-    'Amarikan Rapi gibi kadını aşağılamam. hepsi zaten bir çiçek koparamam. Kadınlar gününüz kutlu olsun..',
-    'Discover dishes you can cook now',
-    'What would you like to cook today?'
-  ];
+  const typewriterTexts = useMemo(() => DEFAULTS.TYPEWRITER_TEXTS, []);
+
+  const handleFilterPress = useCallback(() => {
+    setShowFilterModal(true);
+  }, []);
+
+  const handleFilterClose = useCallback(() => {
+    setShowFilterModal(false);
+  }, []);
+
+  const handleFiltersApply = useCallback((filters: any) => {
+    onFiltersApplied?.(filters);
+    console.log('Filters applied:', filters);
+  }, [onFiltersApplied]);
 
   useEffect(() => {
     const currentText = typewriterTexts[typeIndex];
     
-    const typeSpeed = isDeleting ? 20 : 40; // Daha da hızlandırdık
-    const delay = isDeleting ? 0 : (displayText === currentText ? 1200 : 0); // Bekleme süresini daha da kısalttık
+    const typeSpeed = isDeleting 
+      ? ANIMATION_DURATION.TYPEWRITER.DELETE_SPEED 
+      : ANIMATION_DURATION.TYPEWRITER.TYPE_SPEED;
+    
+    const delay = isDeleting 
+      ? 0 
+      : (displayText === currentText ? ANIMATION_DURATION.TYPEWRITER.PAUSE_DURATION : 0);
     
     const timer = setTimeout(() => {
       if (!isDeleting && displayText === currentText) {
-        // Tam yazıldı, bekle sonra silmeye başla
         setIsDeleting(true);
       } else if (isDeleting && displayText === '') {
-        // Tamamen silindi, sonraki metne geç
         setIsDeleting(false);
         setTypeIndex((prev) => (prev + 1) % typewriterTexts.length);
       } else if (isDeleting) {
-        // Sil
         setDisplayText(currentText.substring(0, displayText.length - 1));
       } else {
-        // Yaz
         setDisplayText(currentText.substring(0, displayText.length + 1));
       }
     }, delay || typeSpeed);
 
     return () => clearTimeout(timer);
-  }, [displayText, isDeleting, typeIndex]);
+  }, [displayText, isDeleting, typeIndex, typewriterTexts]);
+
+  const isTypingComplete = useMemo(() => 
+    !isDeleting && displayText === typewriterTexts[typeIndex], 
+    [isDeleting, displayText, typewriterTexts, typeIndex]
+  );
 
   return (
     <TouchableOpacity 
@@ -64,32 +86,32 @@ const SearchBar = ({ onPress, onFiltersApplied, style }: SearchBarProps): React.
       onPress={onPress}
       activeOpacity={0.8}
     >
-      {/* Sol taraftaki arama ikonu */}
+      {/* Search Icon */}
       <View style={styles.iconContainer}>
         <Ionicons 
           name="search" 
-          size={24} 
+          size={COMPONENT_SPACING.SEARCH_BAR.ICON_SIZE} 
           color={COLORS.textPrimary} 
         />
       </View>
 
-      {/* Orta kısımdaki text'ler */}
+      {/* Text Content */}
       <View style={styles.textContainer}>
         <Text style={styles.primaryText}>
           {DEFAULTS.SEARCH_PLACEHOLDER.PRIMARY}
         </Text>
         <Text style={styles.secondaryText}>
           {displayText}
-          {!isDeleting && displayText === typewriterTexts[typeIndex] && (
+          {isTypingComplete && (
             <Text style={styles.cursor}>...</Text>
           )}
         </Text>
       </View>
 
-      {/* Sağ taraftaki filter butonu */}
+      {/* Filter Button */}
       <TouchableOpacity 
         style={styles.filterButton}
-        onPress={() => setShowFilterModal(true)}
+        onPress={handleFilterPress}
         activeOpacity={0.7}
       >
         <View style={styles.filterIconContainer}>
@@ -104,65 +126,67 @@ const SearchBar = ({ onPress, onFiltersApplied, style }: SearchBarProps): React.
       {/* Filter Modal */}
       <FilterModal
         visible={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
-        onApply={(filters) => {
-          onFiltersApplied?.(filters);
-          console.log('Filters applied:', filters);
-        }}
+        onClose={handleFilterClose}
+        onApply={handleFiltersApply}
       />
     </TouchableOpacity>
   );
-};
+});
+
+SearchBar.displayName = 'SearchBar';
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Changed from 'center' to 'flex-start'
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.ROUND,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
-    marginHorizontal: SPACING.lg,
-    marginTop: SPACING.lg,
-    gap: SPACING.md,
+    paddingVertical: COMPONENT_SPACING.SEARCH_BAR.VERTICAL,
+    paddingHorizontal: COMPONENT_SPACING.SEARCH_BAR.HORIZONTAL,
+    marginHorizontal: COMPONENT_SPACING.SEARCH_BAR.HORIZONTAL,
+    marginTop: COMPONENT_SPACING.SEARCH_BAR.HORIZONTAL,
+    gap: COMPONENT_SPACING.SEARCH_BAR.GAP,
     ...SHADOW_PRESETS.MEDIUM,
   },
   iconContainer: {
-    width: 24,
-    height: 24,
+    width: COMPONENT_SPACING.SEARCH_BAR.ICON_SIZE,
+    height: COMPONENT_SPACING.SEARCH_BAR.ICON_SIZE,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 2, // Slight adjustment to align with text
   },
   textContainer: {
     flex: 1,
-    gap: SPACING.xs,
+    gap: 4, // Using minimal gap for text elements
+    minHeight: COMPONENT_SPACING.SEARCH_BAR.ICON_SIZE, // Ensure minimum height
   },
   primaryText: {
     fontSize: FONT_SIZE.MD,
     fontWeight: '600',
     color: COLORS.textPrimary,
-    lineHeight: 16,
+    lineHeight: FONT_SIZE.MD + 2,
   },
   secondaryText: {
     fontSize: FONT_SIZE.MD,
     fontWeight: '400',
     color: COLORS.textMuted,
-    lineHeight: 16,
-    minHeight: 16, // Animasyon sırasında yükseklik sabit kalsın
+    lineHeight: FONT_SIZE.MD + 2,
+    minHeight: FONT_SIZE.MD + 2, // Prevent layout shift during animation
   },
   cursor: {
     color: COLORS.textMuted,
     opacity: 0.8,
   },
   filterButton: {
-    width: 40,
-    height: 40,
+    width: COMPONENT_SPACING.SEARCH_BAR.FILTER_BUTTON_SIZE,
+    height: COMPONENT_SPACING.SEARCH_BAR.FILTER_BUTTON_SIZE,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 2, // Align with search icon
   },
   filterIconContainer: {
-    width: 40,
-    height: 40,
+    width: COMPONENT_SPACING.SEARCH_BAR.FILTER_BUTTON_SIZE,
+    height: COMPONENT_SPACING.SEARCH_BAR.FILTER_BUTTON_SIZE,
     borderRadius: BORDER_RADIUS.CIRCLE,
     borderWidth: 1.5,
     borderColor: COLORS.border,
