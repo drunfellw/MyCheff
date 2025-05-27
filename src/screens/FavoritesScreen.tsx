@@ -5,10 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import RecipeCard from '../components/RecipeCard';
@@ -43,6 +43,7 @@ interface FavoritesScreenProps {
  * Swipe actions for quick management
  */
 const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'rating'>('recent');
   const [activeTab, setActiveTab] = useState<string>('favorites');
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
@@ -204,7 +205,7 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
         isSelectionMode={isSelectionMode}
       />
     </View>
-  ), [cardWidth, cardSpacing, handleRecipePress, handleFavoritePress]);
+  ), [cardWidth, cardSpacing, handleRecipePress, handleFavoritePress, selectedRecipes, isSelectionMode]);
 
   const renderEmptyState = useCallback(() => (
     <View style={styles.emptyState}>
@@ -235,11 +236,12 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
   ), [sortBy]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <ScreenHeader
         title={isSelectionMode ? `${selectedRecipes.size} Selected` : 'My Favorites'}
         onBackPress={() => navigation?.goBack()}
+        backgroundColor={COLORS.background}
         rightElement={
           favoriteRecipes.length > 0 ? (
             <View style={styles.headerActions}>
@@ -249,7 +251,7 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
                   onPress={handleCancelSelection}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Ionicons name="close" size={20} color={COLORS.textPrimary} />
+                  <Ionicons name="close" size={18} color={COLORS.textPrimary} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity 
@@ -259,7 +261,7 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
               >
                 <Ionicons 
                   name={isSelectionMode ? "trash" : "trash-outline"} 
-                  size={20} 
+                  size={18} 
                   color={isSelectionMode && selectedRecipes.size > 0 ? COLORS.white : COLORS.textPrimary} 
                 />
               </TouchableOpacity>
@@ -270,7 +272,7 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
 
       {favoriteRecipes.length > 0 && (
         <>
-          {/* Stats and Sort */}
+          {/* Stats and Sort - Fixed Position */}
           <View style={styles.controlsContainer}>
             <Text style={styles.statsText}>
               {favoriteRecipes.length} recipe{favoriteRecipes.length !== 1 ? 's' : ''}
@@ -307,7 +309,7 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
         activeTab={activeTab}
         onTabPress={handleTabPress}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -319,11 +321,18 @@ const styles = StyleSheet.create({
 
   headerActions: {
     flexDirection: 'row',
-    gap: SPACING.sm,
+    alignItems: 'center',
+    gap: SPACING.xs,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingRight: SPACING.sm,
   },
   headerButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: BORDER_RADIUS.CIRCLE,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
@@ -358,7 +367,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.MD,
   },
   sortOptionActive: {
-    backgroundColor: COLORS.textPrimary,
+    backgroundColor: COLORS.primary,
   },
   sortOptionText: {
     fontSize: FONT_SIZE.SM,

@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   FlatList,
   KeyboardAvoidingView,
@@ -133,7 +132,7 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <KeyboardAvoidingView 
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -142,10 +141,14 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
         <ScreenHeader
           title="What's in your kitchen?"
           onBackPress={() => navigation?.goBack()}
+          backgroundColor={COLORS.background}
         />
 
         {/* Chat Area */}
-        <ScrollView style={styles.chatArea} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.chatArea} 
+          showsVerticalScrollIndicator={false}
+        >
           {/* Selected Ingredients */}
           {selectedIngredients.length > 0 && (
             <View style={styles.selectedSection}>
@@ -216,38 +219,34 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
         </ScrollView>
 
         {/* Input Area */}
-        <View style={[styles.inputArea, { paddingBottom: insets.bottom }]}>
+        <View style={[styles.inputArea, { paddingBottom: insets.bottom + SPACING.md }]}>
           <View style={styles.inputContainer}>
             <TextInput
               ref={inputRef}
               style={styles.textInput}
-              placeholder="Type ingredient..."
+              placeholder="Type an ingredient..."
               placeholderTextColor={COLORS.textMuted}
               value={inputText}
               onChangeText={setInputText}
-              autoCapitalize="words"
-              autoCorrect={false}
-              blurOnSubmit={false}
+              multiline={false}
+              autoFocus={true}
             />
             {selectedIngredients.length > 0 && (
-              <TouchableOpacity 
-                style={styles.sendButton}
-                onPress={handleSend}
-              >
+              <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
                 <Ionicons name="send" size={20} color={COLORS.white} />
               </TouchableOpacity>
             )}
           </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: COLORS.background,
   },
   keyboardView: {
     flex: 1,
@@ -256,6 +255,7 @@ const styles = StyleSheet.create({
   chatArea: {
     flex: 1,
     paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.lg,
   },
   selectedSection: {
     marginTop: SPACING.lg,

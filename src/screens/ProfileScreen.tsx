@@ -5,12 +5,12 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Image,
   Switch,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import NavigationBar from '../components/NavigationBar';
 import ScreenHeader from '../components/ScreenHeader';
@@ -48,6 +48,7 @@ interface PaymentMethod {
  * payment methods, and settings
  */
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<string>('profile');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
@@ -382,16 +383,22 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   ), [handleLegalDocument, handleLogout]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
         {/* Header */}
         <ScreenHeader
           title="Profile"
           onBackPress={() => navigation?.goBack()}
+          backgroundColor={COLORS.background}
+          rightElement={
+            <TouchableOpacity onPress={handleEditProfile}>
+              <Ionicons name="create-outline" size={24} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+          }
         />
 
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: SPACING.lg }]}
         showsVerticalScrollIndicator={false}
       >
         {renderProfileHeader()}
@@ -411,7 +418,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           activeTab={activeTab}
           onTabPress={handleTabPress}
         />
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -4,9 +4,9 @@ import {
   Text, 
   ScrollView, 
   StyleSheet, 
-  Dimensions,
-  SafeAreaView 
+  Dimensions
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import SearchBar from '../components/SearchBar';
 import ScrollMenu from '../components/ScrollMenu';
@@ -105,6 +105,7 @@ const MOCK_RECIPES: Recipe[] = [
  * Features search, categories, recipe grid, and navigation
  */
 const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState<string>('1'); // Breakfast selected
   const [activeTab, setActiveTab] = useState<string>('home');
   const [recipes, setRecipes] = useState<Recipe[]>(MOCK_RECIPES);
@@ -199,10 +200,10 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
   }, [recipes, gridLayout, handleRecipePress, handleFavoritePress]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + SPACING.lg }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Search Bar */}
@@ -234,7 +235,7 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
         activeTab={activeTab}
         onTabPress={handleTabPress}
       />
-    </SafeAreaView>
+    </View>
   );
 });
 

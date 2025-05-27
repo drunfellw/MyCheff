@@ -12,7 +12,9 @@ import {
   FlatList,
   Modal,
   StatusBar,
+  Animated,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import NavigationBar from '../components/NavigationBar';
@@ -88,6 +90,7 @@ interface RecipeDetailScreenProps {
  * Backend-ready structure
  */
 const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'ingredients' | 'instructions' | 'nutrition'>('ingredients');
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
   const [navActiveTab, setNavActiveTab] = useState<string>('home'); // For navigation bar
@@ -335,44 +338,11 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
   }, [activeTab, recipe, renderIngredient, renderInstruction, renderNutritionItem]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header - Floating over hero image */}
-      <View style={styles.floatingHeader}>
-        <TouchableOpacity 
-          style={styles.headerButton}
-          onPress={() => navigation?.goBack()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        
-        <View style={styles.headerActions}>
-          <TouchableOpacity 
-            style={styles.headerButton}
-            onPress={handleShare}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="share-outline" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.headerButton}
-            onPress={handleToggleFavorite}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons 
-              name={isFavorite ? "heart" : "heart-outline"} 
-              size={24} 
-              color={isFavorite ? COLORS.primary : COLORS.textPrimary} 
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
-
+    <View style={styles.container}>
       <ScrollView 
         style={styles.scrollView}
+        contentContainerStyle={{ paddingTop: insets.top }}
         showsVerticalScrollIndicator={false}
-        bounces={false}
       >
         {/* Hero Carousel */}
         <View style={styles.heroContainer}>
@@ -429,8 +399,6 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
             </View>
           </View>
 
-
-
           {/* Tabs */}
           <View style={styles.tabsContainer}>
             <TouchableOpacity
@@ -462,19 +430,38 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
           {/* Tab Content */}
           {renderTabContent()}
 
-          {/* Bottom Action */}
-          <View style={styles.bottomAction}>
-            <TouchableOpacity
-              style={styles.startCookingButton}
-              onPress={handleStartCooking}
-              activeOpacity={0.8}
-            >
+          {/* Start Cooking Button */}
+          <View style={[styles.bottomAction, { paddingBottom: insets.bottom + SPACING.lg }]}>
+            <TouchableOpacity style={styles.startCookingButton} onPress={handleStartCooking}>
+              <Text style={styles.startCookingButtonText}>Start Cooking</Text>
               <Ionicons name="play" size={20} color={COLORS.white} />
-              <Text style={styles.startCookingText}>Start Cooking</Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
+
+      {/* Floating Header */}
+      <View style={[styles.floatingHeader, { paddingTop: insets.top + SPACING.sm }]}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation?.goBack()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.favoriteButton}
+          onPress={handleToggleFavorite}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons 
+            name={recipe.isFavorite ? "heart" : "heart-outline"} 
+            size={24} 
+            color={recipe.isFavorite ? COLORS.primary : COLORS.textPrimary} 
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Navigation Bar */}
       <NavigationBar
@@ -484,7 +471,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
 
       {/* Full Screen Image Modal */}
       {renderFullScreenModal()}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -495,7 +482,7 @@ const styles = StyleSheet.create({
   },
   floatingHeader: {
     position: 'absolute',
-    top: SPACING.sm,
+    top: 0,
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -504,7 +491,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     zIndex: 10,
   },
-  headerButton: {
+  backButton: {
     width: 40,
     height: 40,
     borderRadius: BORDER_RADIUS.CIRCLE,
@@ -513,9 +500,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...SHADOW_PRESETS.SMALL,
   },
-  headerActions: {
-    flexDirection: 'row',
-    gap: SPACING.md,
+  favoriteButton: {
+    width: 40,
+    height: 40,
+    borderRadius: BORDER_RADIUS.CIRCLE,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOW_PRESETS.SMALL,
   },
   scrollView: {
     flex: 1,
@@ -778,7 +770,7 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.md,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    marginBottom: 120, // NavigationBar yüksekliği + extra space
+    marginBottom: SPACING.xl,
   },
   startCookingButton: {
     flexDirection: 'row',
@@ -790,7 +782,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     ...SHADOW_PRESETS.MEDIUM,
   },
-  startCookingText: {
+  startCookingButtonText: {
     fontSize: FONT_SIZE.LG,
     fontWeight: '600',
     color: COLORS.white,

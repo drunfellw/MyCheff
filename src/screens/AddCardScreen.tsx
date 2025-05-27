@@ -5,9 +5,9 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   TextInput,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import Toast from '../components/Toast';
@@ -27,6 +27,7 @@ interface AddCardScreenProps {
 }
 
 const AddCardScreen: React.FC<AddCardScreenProps> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const { toast, showSuccess, showError, hideToast } = useToast();
   
   const [cardNumber, setCardNumber] = useState('');
@@ -87,14 +88,19 @@ const AddCardScreen: React.FC<AddCardScreenProps> = ({ navigation }) => {
   }, [cardNumber, expiryDate, cvv, holderName, showError, showSuccess, navigation]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <ScreenHeader
-        title="Add New Card"
+        title="Add Payment Card"
         onBackPress={() => navigation?.goBack()}
+        backgroundColor={COLORS.background}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={{ paddingTop: SPACING.lg }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Card Preview */}
         <View style={styles.cardPreview}>
           <View style={[styles.previewCard, { backgroundColor: getCardColor(getCardType(cardNumber)) }]}>
@@ -222,7 +228,7 @@ const AddCardScreen: React.FC<AddCardScreenProps> = ({ navigation }) => {
         type={toast.type}
         onHide={hideToast}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

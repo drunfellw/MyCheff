@@ -5,13 +5,13 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TextInput,
   Dimensions,
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import RecipeCard from '../components/RecipeCard';
@@ -53,6 +53,7 @@ interface SearchResultsScreenProps {
  * Grid layout for recipe results
  */
 const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState<string>(route?.params?.initialQuery || '');
   const [isFilterModalVisible, setIsFilterModalVisible] = useState<boolean>(false);
   const [appliedFilters, setAppliedFilters] = useState<FilterOptions>({
@@ -277,20 +278,24 @@ const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({ navigation, r
   ), []);
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation?.goBack()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={COLORS.textMuted} style={styles.searchIcon} />
+    <View style={styles.container}>
+      {/* Header with Search */}
+      <ScreenHeader
+        title=""
+        onBackPress={() => navigation?.goBack()}
+        showBackButton={true}
+        backgroundColor={COLORS.background}
+        rightElement={
+          <TouchableOpacity onPress={handleFilterPress}>
+            <Ionicons name="options-outline" size={24} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+        }
+      />
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={20} color={COLORS.textMuted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search recipes..."
@@ -298,71 +303,43 @@ const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({ navigation, r
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoFocus={!route?.params?.initialQuery}
-            returnKeyType="search"
           />
-        </View>
-        
-        <TouchableOpacity 
-          style={[styles.filterButton, activeFilterCount > 0 && styles.filterButtonActive]}
-          onPress={handleFilterPress}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons 
-            name="options-outline" 
-            size={20} 
-            color={activeFilterCount > 0 ? COLORS.white : COLORS.textPrimary} 
-          />
-          {activeFilterCount > 0 && (
-            <View style={styles.filterBadge}>
-              <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-            </View>
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Results Info */}
-      <View style={styles.resultsInfo}>
-        <Text style={styles.resultsText}>
-          {searchResults.length} recipes found
-          {searchQuery ? ` for "${searchQuery}"` : ''}
-        </Text>
-        {activeFilterCount > 0 && (
-          <TouchableOpacity onPress={() => setAppliedFilters({ categories: [], difficulty: [], cookingTime: [], dietary: [] })}>
-            <Text style={styles.clearFiltersText}>Clear filters</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Recipe Results */}
+      {/* Results */}
       <FlatList
         data={searchResults}
         renderItem={renderRecipeItem}
         keyExtractor={(item) => item.id}
-        numColumns={numColumns}
-        contentContainerStyle={styles.recipeList}
+        numColumns={2}
+        contentContainerStyle={styles.resultsContainer}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={renderEmptyState}
         onEndReachedThreshold={0.1}
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}
         windowSize={10}
       />
 
-            {/* Filter Modal */}
+      {/* Navigation Bar */}
+      <NavigationBar
+        activeTab={activeTab}
+        onTabPress={handleTabPress}
+      />
+
+      {/* Filter Modal */}
       <FilterModal
         visible={isFilterModalVisible}
         onClose={() => setIsFilterModalVisible(false)}
         onApply={handleFilterApply}
         initialFilters={convertOptionsToFilterState(appliedFilters)}
       />
-
-              {/* Navigation Bar */}
-        <NavigationBar
-          activeTab={activeTab}
-          onTabPress={handleTabPress}
-        />
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+    </View>
   );
 };
 
@@ -388,17 +365,21 @@ const styles = StyleSheet.create({
     ...SHADOW_PRESETS.SMALL,
   },
   searchContainer: {
-    flex: 1,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  searchIcon: {
+    marginRight: SPACING.sm,
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.LG,
     paddingHorizontal: SPACING.md,
     height: 48,
+    gap: SPACING.sm,
     ...SHADOW_PRESETS.SMALL,
-  },
-  searchIcon: {
-    marginRight: SPACING.sm,
   },
   searchInput: {
     flex: 1,
@@ -457,6 +438,10 @@ const styles = StyleSheet.create({
   },
   recipeItemContainer: {
     marginBottom: SPACING.lg,
+  },
+  resultsContainer: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.xl,
   },
   emptyState: {
     flex: 1,

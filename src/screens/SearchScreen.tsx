@@ -6,15 +6,16 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  SafeAreaView,
   Platform,
   Animated,
   Dimensions,
   Keyboard,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { NavigationBar } from '../components';
+import ScreenHeader from '../components/ScreenHeader';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -41,6 +42,7 @@ interface SearchScreenProps {
  * Minimal design with focus on user experience
  */
 const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIngredients, setSelectedIngredients] = useState<Ingredient[]>([]);
   const [searchResults, setSearchResults] = useState<Ingredient[]>([]);
@@ -174,21 +176,25 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
   ), [handleSelectIngredient]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Search Recipes</Text>
-          {selectedIngredients.length > 0 && (
+    <View style={styles.container}>
+      {/* Header */}
+      <ScreenHeader
+        title="Search Recipes"
+        onBackPress={() => navigation?.goBack()}
+        backgroundColor={COLORS.background}
+        rightElement={
+          selectedIngredients.length > 0 ? (
             <TouchableOpacity 
               style={styles.searchButton}
               onPress={handleSearchRecipes}
             >
               <Text style={styles.searchButtonText}>Search</Text>
             </TouchableOpacity>
-          )}
-        </View>
+          ) : undefined
+        }
+      />
 
+      <View style={styles.content}>
         {/* Search Input */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
@@ -280,9 +286,12 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
         )}
       </View>
       
-      {/* Navigation Bar - Always at bottom */}
-      <NavigationBar activeTab="search" onTabPress={handleTabPress} />
-    </SafeAreaView>
+      {/* Navigation Bar */}
+      <NavigationBar
+        activeTab="search"
+        onTabPress={handleTabPress}
+      />
+    </View>
   );
 };
 
@@ -293,28 +302,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: SPACING.md,
-  },
-  title: {
-    fontSize: FONT_SIZE.XL,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  searchButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.ROUND,
-  },
-  searchButtonText: {
-    color: COLORS.white,
-    fontSize: FONT_SIZE.MD,
-    fontWeight: '600',
   },
   searchContainer: {
     padding: SPACING.md,
@@ -445,6 +432,16 @@ const styles = StyleSheet.create({
   },
   resultsContainer: {
     flex: 1,
+  },
+  searchButton: {
+    padding: SPACING.md,
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.ROUND,
+  },
+  searchButtonText: {
+    fontSize: FONT_SIZE.MD,
+    fontWeight: '500',
+    color: COLORS.white,
   },
 });
 

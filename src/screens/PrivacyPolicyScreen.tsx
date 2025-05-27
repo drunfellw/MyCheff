@@ -5,8 +5,8 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import ScreenHeader from '../components/ScreenHeader';
@@ -24,16 +24,22 @@ interface PrivacyPolicyScreenProps {
 }
 
 const PrivacyPolicyScreen: React.FC<PrivacyPolicyScreenProps> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
         {/* Header */}
         <ScreenHeader
           title="Privacy Policy"
           onBackPress={() => navigation?.goBack()}
+          backgroundColor={COLORS.background}
         />
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.content} 
+          contentContainerStyle={{ paddingTop: SPACING.lg }}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.section}>
             <Text style={styles.lastUpdated}>Last updated: January 15, 2024</Text>
           </View>
@@ -149,7 +155,7 @@ const PrivacyPolicyScreen: React.FC<PrivacyPolicyScreenProps> = ({ navigation })
 
           <View style={styles.bottomSpacing} />
         </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

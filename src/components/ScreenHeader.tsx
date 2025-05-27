@@ -6,6 +6,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { 
   COLORS, 
   SPACING, 
@@ -33,34 +34,41 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   onBackPress,
   rightElement,
   showBackButton = true,
-  backgroundColor = COLORS.white,
+  backgroundColor = COLORS.background,
 }) => {
+  const insets = useSafeAreaInsets();
+  
   return (
-    <View style={[styles.header, { backgroundColor }]}>
-      {showBackButton ? (
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={onBackPress}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.backButtonSpacer} />
-      )}
-      
-      <Text style={styles.headerTitle} numberOfLines={1}>
-        {title}
-      </Text>
-      
-      <View style={styles.rightContainer}>
-        {rightElement || <View style={styles.rightSpacer} />}
+    <View style={[styles.headerContainer, { paddingTop: insets.top, backgroundColor }]}>
+      <View style={[styles.header, { backgroundColor }]}>
+        {showBackButton ? (
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={onBackPress}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.backButtonSpacer} />
+        )}
+        
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        
+        <View style={styles.rightContainer}>
+          {rightElement || <View style={styles.rightSpacer} />}
+        </View>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  headerContainer: {
+    backgroundColor: COLORS.background,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -91,10 +99,11 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.md,
   },
   rightContainer: {
-    width: 40,
+    width: 80,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   rightSpacer: {
     width: 40,

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   Dimensions,
   Animated,
@@ -144,9 +143,9 @@ const CookingStepsScreen = React.memo<CookingStepsScreenProps>(({ navigation, ro
   const isLastStep = currentStep === instructions.length - 1;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + SPACING.md, backgroundColor: COLORS.background }]}>
         <TouchableOpacity
           style={styles.closeButton}
           onPress={handleClose}
@@ -238,7 +237,7 @@ const CookingStepsScreen = React.memo<CookingStepsScreenProps>(({ navigation, ro
           />
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 });
 
@@ -247,7 +246,7 @@ CookingStepsScreen.displayName = 'CookingStepsScreen';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',

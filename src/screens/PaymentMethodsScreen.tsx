@@ -5,10 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Toast from '../components/Toast';
 import ScreenHeader from '../components/ScreenHeader';
@@ -45,6 +45,7 @@ interface PaymentMethodsScreenProps {
  * Features card listing, adding, removing, and setting default
  */
 const PaymentMethodsScreen: React.FC<PaymentMethodsScreenProps> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const { toast, showSuccess, showError, hideToast } = useToast();
   
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
@@ -169,11 +170,12 @@ const PaymentMethodsScreen: React.FC<PaymentMethodsScreenProps> = ({ navigation 
   ), [getCardColor, handleSetDefault, handleDeleteCard]);
 
     return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <ScreenHeader
         title="Payment Methods"
         onBackPress={() => navigation?.goBack()}
+        backgroundColor={COLORS.background}
         rightElement={
           <TouchableOpacity onPress={handleAddCard}>
             <Ionicons name="add" size={24} color={COLORS.primary} />
@@ -181,7 +183,11 @@ const PaymentMethodsScreen: React.FC<PaymentMethodsScreenProps> = ({ navigation 
         }
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={{ paddingTop: SPACING.lg }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Cards List */}
         <View style={styles.cardsContainer}>
           {paymentMethods.map(renderPaymentCard)}
@@ -209,7 +215,7 @@ const PaymentMethodsScreen: React.FC<PaymentMethodsScreenProps> = ({ navigation 
         type={toast.type}
         onHide={hideToast}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

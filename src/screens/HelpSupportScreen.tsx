@@ -5,10 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   TextInput,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import ScreenHeader from '../components/ScreenHeader';
@@ -33,6 +33,7 @@ interface FAQItem {
 }
 
 const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
   const [faqItems, setFaqItems] = useState<FAQItem[]>([
@@ -106,14 +107,19 @@ const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({ navigation }) => 
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
         {/* Header */}
         <ScreenHeader
           title="Help & Support"
           onBackPress={() => navigation?.goBack()}
+          backgroundColor={COLORS.background}
         />
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.content} 
+          contentContainerStyle={{ paddingTop: SPACING.lg }}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Quick Actions */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -222,7 +228,7 @@ const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({ navigation }) => 
 
           <View style={styles.bottomSpacing} />
         </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

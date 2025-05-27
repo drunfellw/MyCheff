@@ -5,12 +5,12 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   TextInput,
   Image,
   Alert,
   Switch,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import ScreenHeader from '../components/ScreenHeader';
@@ -42,6 +42,7 @@ interface UserProfile {
 }
 
 const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<UserProfile>({
     name: 'İsmail Uzun',
     email: 'ismail@example.com',
@@ -98,11 +99,12 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
         {/* Header */}
         <ScreenHeader
           title="Edit Profile"
           onBackPress={() => navigation?.goBack()}
+          backgroundColor={COLORS.background}
           rightElement={
             <TouchableOpacity 
               style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
@@ -116,7 +118,11 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
           }
         />
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.content} 
+          contentContainerStyle={{ paddingTop: SPACING.lg }}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Avatar Section */}
           <View style={styles.avatarSection}>
             <TouchableOpacity style={styles.avatarContainer} onPress={handleAvatarChange}>
@@ -272,7 +278,7 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
 
           <View style={styles.bottomSpacing} />
         </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
