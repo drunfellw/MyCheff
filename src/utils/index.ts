@@ -1,5 +1,10 @@
-// Error Handling
-export * from './errorHandler';
+// API Services
+export { api, recipeAPI, categoryAPI, ingredientAPI, userAPI, filterAPI } from '../services/api';
+
+// Custom Hooks
+export { useRecipes, useIngredientRecipes, useRecipeSearch } from '../hooks/useRecipes';
+export { useIngredients, useIngredientInput } from '../hooks/useIngredients';
+export { useFavorites, useFavoriteToggle } from '../hooks/useFavorites';
 
 // Performance Utilities
 export * from './performance';

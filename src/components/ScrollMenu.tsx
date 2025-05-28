@@ -9,12 +9,7 @@ import {
   CATEGORY_ICONS,
   ANIMATION_DURATION 
 } from '../constants';
-
-interface Category {
-  id: string;
-  name: string;
-  icon: string;
-}
+import type { Category } from '../types';
 
 interface ScrollMenuProps {
   categories?: Category[];
@@ -83,7 +78,7 @@ const ScrollMenu = React.memo<ScrollMenuProps>(({
       >
         <View style={styles.iconContainer}>
           <Ionicons
-            name={getCategoryIcon(category.icon) as any}
+            name={getCategoryIcon(category.icon || 'ellipse-outline') as any}
             size={CATEGORY_ITEM.ICON_SIZE}
             color={isSelected ? COLORS.textPrimary : COLORS.textSecondary}
           />
@@ -97,7 +92,7 @@ const ScrollMenu = React.memo<ScrollMenuProps>(({
           numberOfLines={1}
           ellipsizeMode="tail"
         >
-          {category.name}
+          {category.name || 'Category'}
         </Text>
       </TouchableOpacity>
     );

@@ -8,19 +8,9 @@ import {
   BORDER_RADIUS, 
   SHADOW_PRESETS 
 } from '../constants';
+import type { Recipe } from '../types';
 
 const { width: screenWidth } = Dimensions.get('window');
-
-interface Recipe {
-  id: string;
-  title?: string;
-  category?: string;
-  image?: string;
-  time?: string;
-  rating?: string;
-  reviewCount?: string;
-  isFavorite?: boolean;
-}
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -131,7 +121,7 @@ const RecipeCard = React.memo<RecipeCardProps>(({
 
         {/* Recipe Category */}
         <Text style={styles.subtitle} numberOfLines={1}>
-          {recipe.category || 'Delicious beverage'}
+          {recipe.categories?.[0]?.name || 'Delicious recipe'}
         </Text>
       </View>
     </TouchableOpacity>

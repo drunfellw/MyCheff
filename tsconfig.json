@@ -11,11 +11,11 @@
     "target": "ES2020",
     "module": "esnext",
     "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
+      "ES2020"
     ],
-    "types": [],
+    "types": [
+      "react-native"
+    ],
     "declaration": false,
     "noEmit": true,
     "isolatedModules": true,
@@ -64,7 +64,8 @@
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "src/types/global.d.ts"
   ],
   "exclude": [
     "node_modules"
