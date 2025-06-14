@@ -1,0 +1,104 @@
+{
+  "sampleRecipes": [
+    {
+      "title": "Döner Kebab",
+      "description": "Geleneksel Türk döneri, nefis soslar ile servis edilir",
+      "cookingTime": 45,
+      "prepTime": 30,
+      "difficulty": 3,
+      "servings": 4,
+      "imageUrl": "/uploads/recipes/doner-kebab.jpg",
+      "categories": ["Ana Yemek", "Et Yemekleri"]
+    },
+    {
+      "title": "Adana Kebabı",
+      "description": "Acılı kıyma kebabı, bulgur pilavı ile servis",
+      "cookingTime": 25,
+      "prepTime": 20,
+      "difficulty": 2,
+      "servings": 6,
+      "imageUrl": "/uploads/recipes/adana-kebab.jpg",
+      "categories": ["Ana Yemek", "Et Yemekleri"]
+    },
+    {
+      "title": "İskender Kebab",
+      "description": "Tereyağlı domates soslu döner, yoğurt ile",
+      "cookingTime": 30,
+      "prepTime": 15,
+      "difficulty": 3,
+      "servings": 4,
+      "imageUrl": "/uploads/recipes/iskender-kebab.jpg",
+      "categories": ["Ana Yemek", "Et Yemekleri"]
+    },
+    {
+      "title": "Lahmacun",
+      "description": "İnce hamurun üzerine kıymalı sos, sebzeler ile",
+      "cookingTime": 15,
+      "prepTime": 60,
+      "difficulty": 4,
+      "servings": 8,
+      "imageUrl": "/uploads/recipes/lahmacun.jpg",
+      "categories": ["Ana Yemek", "Hamur İşi"]
+    },
+    {
+      "title": "Karnıyarık",
+      "description": "Patlıcan içi kıymalı dolma, geleneksel Türk yemeği",
+      "cookingTime": 45,
+      "prepTime": 30,
+      "difficulty": 3,
+      "servings": 6,
+      "imageUrl": "/uploads/recipes/karniyarik.jpg",
+      "categories": ["Ana Yemek", "Sebze Yemekleri"]
+    },
+    {
+      "title": "Menemen",
+      "description": "Domates, biber ve yumurta ile yapılan kahvaltılık",
+      "cookingTime": 15,
+      "prepTime": 10,
+      "difficulty": 1,
+      "servings": 2,
+      "imageUrl": "/uploads/recipes/menemen.jpg",
+      "categories": ["Kahvaltı", "Sebze Yemekleri"]
+    },
+    {
+      "title": "Börek (Su Böreği)",
+      "description": "Katkat yufka ile peynirli nefis börek",
+      "cookingTime": 60,
+      "prepTime": 45,
+      "difficulty": 4,
+      "servings": 8,
+      "imageUrl": "/uploads/recipes/su-boregi.jpg",
+      "categories": ["Ana Yemek", "Hamur İşi"]
+    },
+    {
+      "title": "Mantı",
+      "description": "Küçük hamurun içinde kıyma, yoğurt ve tereyağ ile",
+      "cookingTime": 30,
+      "prepTime": 90,
+      "difficulty": 5,
+      "servings": 4,
+      "imageUrl": "/uploads/recipes/manti.jpg",
+      "categories": ["Ana Yemek", "Hamur İşi"]
+    },
+    {
+      "title": "Baklava",
+      "description": "Yufka arası ceviz, şerbetli geleneksel tatlı",
+      "cookingTime": 45,
+      "prepTime": 60,
+      "difficulty": 4,
+      "servings": 12,
+      "imageUrl": "/uploads/recipes/baklava.jpg",
+      "categories": ["Tatlı", "Hamur İşi"]
+    },
+    {
+      "title": "Pilav",
+      "description": "Tereyağlı bulgur pilavı, et suyunda pişirilmiş",
+      "cookingTime": 30,
+      "prepTime": 10,
+      "difficulty": 2,
+      "servings": 6,
+      "imageUrl": "/uploads/recipes/pilav.jpg",
+      "categories": ["Garnitür", "Pirinç/Bulgur"]
+    }
+  ]
+} 

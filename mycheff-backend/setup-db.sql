@@ -1,0 +1,14 @@
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Create schema if not exists
+CREATE SCHEMA IF NOT EXISTS mycheff;
+
+-- Grant permissions
+GRANT ALL PRIVILEGES ON SCHEMA mycheff TO postgres;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA mycheff TO postgres;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA mycheff TO postgres;
+
+-- Set default privileges
+ALTER DEFAULT PRIVILEGES IN SCHEMA mycheff GRANT ALL ON TABLES TO postgres;
+ALTER DEFAULT PRIVILEGES IN SCHEMA mycheff GRANT ALL ON SEQUENCES TO postgres; 

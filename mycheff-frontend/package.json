@@ -1,0 +1,83 @@
+{
+  "name": "mycheff-frontend",
+  "version": "1.0.0",
+  "description": "Professional Recipe App - Cross-platform mobile application built with React Native and Expo",
+  "keywords": [
+    "react-native",
+    "expo",
+    "typescript",
+    "recipe",
+    "mobile",
+    "cross-platform"
+  ],
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "build:android": "expo build:android",
+    "build:ios": "expo build:ios",
+    "build:web": "expo build:web",
+    "publish": "expo publish",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
+    "clean": "expo r -c",
+    "eject": "expo eject"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^14.0.0",
+    "@gorhom/bottom-sheet": "^5.1.5",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-community/netinfo": "^11.4.1",
+    "@tanstack/react-query": "^5.77.2",
+    "axios": "^1.9.0",
+    "expo": "^53.0.0",
+    "expo-blur": "^14.1.4",
+    "expo-status-bar": "~2.2.3",
+    "react": "19.0.0",
+    "react-native": "0.79.2",
+    "react-native-gesture-handler": "~2.24.0",
+    "react-native-reanimated": "~3.17.4",
+    "react-native-responsive-dimensions": "^3.1.1",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-toast-message": "^2.3.0",
+    "react-native-vector-icons": "^10.0.3"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "@types/node": "^22.15.23",
+    "@types/react": "~19.0.10",
+    "@types/react-native": "^0.72.8",
+    "typescript": "^5.8.3"
+  },
+  "author": {
+    "name": "MyCheff Team",
+    "email": "team@mycheff.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mycheff/mycheff-frontend.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mycheff/mycheff-frontend/issues"
+  },
+  "homepage": "https://mycheff.com",
+  "private": false,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "react-native-responsive-dimensions",
+          "react-native-vector-icons"
+        ]
+      }
+    }
+  }
+}
