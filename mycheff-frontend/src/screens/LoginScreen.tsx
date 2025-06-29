@@ -1,26 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Animated,
-  Dimensions,
-  ActivityIndicator,
   KeyboardAvoidingView,
   ScrollView,
   Platform,
-  Keyboard,
-  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../providers/AuthProvider';
+import { CustomTextInput, CustomTextInputRef } from '../components';
 import { COLORS, FONT_SIZE, FONT_FAMILY, SPACING } from '../constants';
-
-const { width: screenWidth } = Dimensions.get('window');
 
 interface LoginScreenProps {
   navigation: {
@@ -29,251 +22,105 @@ interface LoginScreenProps {
   };
 }
 
-interface FormErrors {
-  email: string;
-  password: string;
-}
-
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const { login, isLoading } = useAuth();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const [errors, setErrors] = useState<FormErrors>({
-    email: '',
-    password: '',
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [isFormValid, setIsFormValid] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-
-  useEffect(() => {
-    // Start animations
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
-  // Real-time validation
-  useEffect(() => {
-    validateForm();
-  }, [formData]);
-
-  const validateEmail = (email: string): string => {
-    if (!email) return 'E-posta adresi gerekli';
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return 'Geçerli bir e-posta adresi giriniz';
-    return '';
-  };
-
-  const validatePassword = (password: string): string => {
-    if (!password) return 'Şifre gerekli';
-    if (password.length < 6) return 'Şifre en az 6 karakter olmalı';
-    return '';
-  };
-
-  const validateForm = () => {
-    const emailError = validateEmail(formData.email);
-    const passwordError = validatePassword(formData.password);
-
-    setErrors({
-      email: emailError,
-      password: passwordError,
-    });
-
-    setIsFormValid(!emailError && !passwordError && formData.email && formData.password);
-  };
-
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+  // Refs for focus management
+  const emailRef = useRef<CustomTextInputRef>(null);
+  const passwordRef = useRef<CustomTextInputRef>(null);
 
   const handleLogin = async () => {
-    if (!isFormValid || isLoading) return;
+    if (!email || !password) {
+      Alert.alert('Hata', 'Lütfen tüm alanları doldurun');
+      return;
+    }
 
     try {
-      await login(formData.email, formData.password);
-      // Navigation will be handled by App.tsx based on auth state
+      await login(email, password);
     } catch (error: any) {
-      console.error('Login error:', error);
-      
-      let errorMessage = 'Giriş yapılırken bir hata oluştu';
-      if (error.message?.includes('Invalid credentials')) {
-        errorMessage = 'E-posta veya şifre hatalı';
-      } else if (error.message?.includes('network')) {
-        errorMessage = 'İnternet bağlantınızı kontrol edin';
-      }
-
-      Alert.alert('Hata', errorMessage);
+      Alert.alert('Hata', 'Giriş yapılırken bir hata oluştu');
     }
   };
 
-  const InputField = ({ 
-    label, 
-    value, 
-    onChangeText, 
-    placeholder, 
-    secureTextEntry = false,
-    error = '',
-    icon,
-    keyboardType = 'default',
-    autoCapitalize = 'none',
-    rightIcon,
-    onRightIconPress,
-  }: {
-    label: string;
-    value: string;
-    onChangeText: (text: string) => void;
-    placeholder: string;
-    secureTextEntry?: boolean;
-    error?: string;
-    icon: string;
-    keyboardType?: any;
-    autoCapitalize?: any;
-    rightIcon?: string;
-    onRightIconPress?: () => void;
-  }) => (
-    <View style={styles.inputContainer}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <View style={[
-        styles.inputWrapper,
-        error ? styles.inputWrapperError : null,
-        value && !error ? styles.inputWrapperSuccess : null,
-      ]}>
-        <Feather name={icon as any} size={20} color={error ? COLORS.error : COLORS.textSecondary} style={styles.inputIcon} />
-        <TextInput
-          style={styles.input}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={COLORS.textSecondary}
-          secureTextEntry={secureTextEntry}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={false}
-        />
-        {rightIcon && (
-          <TouchableOpacity onPress={onRightIconPress} style={styles.rightIconContainer}>
-            <Feather name={rightIcon as any} size={20} color={COLORS.textSecondary} />
-          </TouchableOpacity>
-        )}
-      </View>
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardAvoid}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoid}
+      >
+        {/* Back Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
         >
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            <Animated.View style={[
-              styles.content,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}>
-              {/* Header */}
-              <View style={styles.header}>
-                <Text style={styles.title}>Hoş Geldin!</Text>
-                <Text style={styles.subtitle}>MyCheff hesabına giriş yap ve yemek dünyasını keşfet</Text>
-              </View>
+          <Feather name="chevron-left" size={24} color={COLORS.textPrimary} />
+          <Text style={styles.backButtonText}>Geri</Text>
+        </TouchableOpacity>
 
-              {/* Form */}
-              <View style={styles.form}>
-                <InputField
-                  label="E-posta Adresi"
-                  value={formData.email}
-                  onChangeText={(text) => handleInputChange('email', text)}
-                  placeholder="ornek@email.com"
-                  keyboardType="email-address"
-                  icon="mail"
-                  error={errors.email}
-                />
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="none"
+          bounces={false}
+        >
+          <View style={styles.content}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Giriş Yap</Text>
+            </View>
 
-                <InputField
-                  label="Şifre"
-                  value={formData.password}
-                  onChangeText={(text) => handleInputChange('password', text)}
-                  placeholder="Şifrenizi giriniz"
-                  secureTextEntry={!showPassword}
-                  icon="lock"
-                  error={errors.password}
-                  rightIcon={showPassword ? "eye-off" : "eye"}
-                  onRightIconPress={() => setShowPassword(!showPassword)}
-                />
+            {/* Form */}
+            <View style={styles.form}>
+              <CustomTextInput
+                ref={emailRef}
+                label="E-posta"
+                placeholder="E-posta adresiniz"
+                value={email}
+                onChangeText={setEmail}
+                leftIcon="mail"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                required
+                nextInputRef={passwordRef}
+              />
 
-                {/* Forgot Password */}
-                <TouchableOpacity 
-                  style={styles.forgotPasswordContainer}
-                  onPress={() => navigation.navigate('ForgotPassword')}
-                >
-                  <Text style={styles.forgotPasswordText}>Şifremi Unuttum</Text>
-                </TouchableOpacity>
+              <CustomTextInput
+                ref={passwordRef}
+                label="Şifre"
+                placeholder="Şifreniz"
+                value={password}
+                onChangeText={setPassword}
+                leftIcon="lock"
+                isPassword
+                required
+                onSubmitEditing={handleLogin}
+              />
 
-                {/* Login Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.loginButton,
-                    isFormValid ? styles.loginButtonActive : styles.loginButtonDisabled,
-                  ]}
-                  onPress={handleLogin}
-                  disabled={!isFormValid || isLoading}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color={COLORS.white} size="small" />
-                  ) : (
-                    <Text style={styles.loginButtonText}>Giriş Yap</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
+              {/* Login Button */}
+              <TouchableOpacity
+                style={styles.loginButton}
+                onPress={handleLogin}
+                disabled={isLoading}
+              >
+                <Text style={styles.loginButtonText}>
+                  {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-              {/* Divider */}
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>veya</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* Social Login */}
-              <View style={styles.socialContainer}>
-                <TouchableOpacity style={styles.socialButton}>
-                  <Feather name="globe" size={20} color={COLORS.primary} />
-                  <Text style={styles.socialButtonText}>Google ile Giriş</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Register Link */}
-              <View style={styles.registerContainer}>
-                <Text style={styles.registerText}>Hesabın yok mu? </Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                  <Text style={styles.registerLink}>Kayıt Ol</Text>
-                </TouchableOpacity>
-              </View>
-            </Animated.View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
+            {/* Register Link */}
+            <View style={styles.registerContainer}>
+              <Text style={styles.registerText}>Hesabın yok mu? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.registerLink}>Kayıt Ol</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -288,148 +135,71 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 100,
   },
   content: {
     flex: 1,
     paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.xxxl,
+    paddingTop: 80,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 8,
+    padding: 8,
+    zIndex: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontFamily: FONT_FAMILY.MEDIUM,
+    color: COLORS.textPrimary,
+    marginLeft: 4,
   },
   header: {
     alignItems: 'center',
-    marginBottom: SPACING.xxxl,
+    marginBottom: 40,
   },
   title: {
-    fontSize: FONT_SIZE.DISPLAY_SMALL,
+    fontSize: 28,
     fontFamily: FONT_FAMILY.BOLD,
     color: COLORS.textPrimary,
-    marginBottom: SPACING.sm,
-  },
-  subtitle: {
-    fontSize: FONT_SIZE.BODY_LARGE,
-    fontFamily: FONT_FAMILY.REGULAR,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
   },
   form: {
-    marginBottom: SPACING.xxxl,
-  },
-  inputContainer: {
-    marginBottom: SPACING.xl,
-  },
-  inputLabel: {
-    fontSize: FONT_SIZE.LABEL_LARGE,
-    fontFamily: FONT_FAMILY.MEDIUM,
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.sm,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: SPACING.lg,
-    height: 56,
-  },
-  inputWrapperError: {
-    borderColor: COLORS.error,
-  },
-  inputWrapperSuccess: {
-    borderColor: COLORS.success,
-  },
-  inputIcon: {
-    marginRight: SPACING.md,
-  },
-  input: {
-    flex: 1,
-    fontSize: FONT_SIZE.BODY_LARGE,
-    fontFamily: FONT_FAMILY.REGULAR,
-    color: COLORS.textPrimary,
-  },
-  rightIconContainer: {
-    padding: SPACING.sm,
-  },
-  errorText: {
-    fontSize: FONT_SIZE.BODY_SMALL,
-    fontFamily: FONT_FAMILY.REGULAR,
-    color: COLORS.error,
-    marginTop: SPACING.xs,
-  },
-  forgotPasswordContainer: {
-    alignItems: 'flex-end',
-    marginBottom: SPACING.xl,
-  },
-  forgotPasswordText: {
-    fontSize: FONT_SIZE.BODY_MEDIUM,
-    fontFamily: FONT_FAMILY.MEDIUM,
-    color: COLORS.primary,
+    marginBottom: 40,
   },
   loginButton: {
-    height: 56,
-    borderRadius: SPACING.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loginButtonActive: {
     backgroundColor: COLORS.primary,
-  },
-  loginButtonDisabled: {
-    backgroundColor: COLORS.textSecondary,
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 20,
   },
   loginButtonText: {
-    fontSize: FONT_SIZE.BUTTON_LARGE,
+    fontSize: 16,
     fontFamily: FONT_FAMILY.SEMI_BOLD,
     color: COLORS.white,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: SPACING.xxxl,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.border,
-  },
-  dividerText: {
-    fontSize: FONT_SIZE.BODY_MEDIUM,
-    fontFamily: FONT_FAMILY.REGULAR,
-    color: COLORS.textSecondary,
-    marginHorizontal: SPACING.lg,
-  },
-  socialContainer: {
-    marginBottom: SPACING.xxxl,
-  },
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 56,
-    backgroundColor: COLORS.white,
-    borderRadius: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  socialButtonText: {
-    fontSize: FONT_SIZE.BUTTON_LARGE,
-    fontFamily: FONT_FAMILY.MEDIUM,
-    color: COLORS.textPrimary,
-    marginLeft: SPACING.md,
   },
   registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.xl,
   },
   registerText: {
-    fontSize: FONT_SIZE.BODY_MEDIUM,
+    fontSize: 14,
     fontFamily: FONT_FAMILY.REGULAR,
     color: COLORS.textSecondary,
   },
   registerLink: {
-    fontSize: FONT_SIZE.BODY_MEDIUM,
+    fontSize: 14,
     fontFamily: FONT_FAMILY.SEMI_BOLD,
     color: COLORS.primary,
   },

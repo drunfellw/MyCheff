@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
@@ -12,12 +11,11 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Platform,
-  Keyboard,
-  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../providers/AuthProvider';
+import { CustomTextInput, CustomTextInputRef } from '../components';
 import { COLORS, FONT_SIZE, FONT_FAMILY, SPACING } from '../constants';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -29,14 +27,6 @@ interface RegisterScreenProps {
   };
 }
 
-interface FormErrors {
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  fullName: string;
-}
-
 const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const { register, isLoading } = useAuth();
   const [formData, setFormData] = useState({
@@ -46,16 +36,21 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     confirmPassword: '',
     fullName: '',
   });
-  const [errors, setErrors] = useState<FormErrors>({
+  const [errors, setErrors] = useState({
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
     fullName: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
+  
+  // Refs for focus management
+  const fullNameRef = useRef<CustomTextInputRef>(null);
+  const usernameRef = useRef<CustomTextInputRef>(null);
+  const emailRef = useRef<CustomTextInputRef>(null);
+  const passwordRef = useRef<CustomTextInputRef>(null);
+  const confirmPasswordRef = useRef<CustomTextInputRef>(null);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -77,81 +72,65 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     ]).start();
   }, []);
 
-  // Real-time validation
-  useEffect(() => {
-    validateForm();
-  }, [formData]);
-
-  const validateUsername = (username: string): string => {
+  // Validation functions
+  const validateUsername = useCallback((username: string): string => {
     if (!username) return 'Kullanıcı adı gerekli';
     if (username.length < 3) return 'Kullanıcı adı en az 3 karakter olmalı';
     if (!/^[a-zA-Z0-9_]+$/.test(username)) return 'Sadece harf, rakam ve _ kullanabilirsiniz';
     return '';
-  };
+  }, []);
 
-  const validateEmail = (email: string): string => {
+  const validateEmail = useCallback((email: string): string => {
     if (!email) return 'E-posta adresi gerekli';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return 'Geçerli bir e-posta adresi giriniz';
     return '';
-  };
+  }, []);
 
-  const validatePassword = (password: string): string => {
+  const validatePassword = useCallback((password: string): string => {
     if (!password) return 'Şifre gerekli';
     if (password.length < 6) return 'Şifre en az 6 karakter olmalı';
     if (!/(?=.*[a-z])(?=.*[A-Z])/.test(password)) return 'En az bir büyük ve bir küçük harf içermeli';
     if (!/(?=.*\d)/.test(password)) return 'En az bir rakam içermeli';
     return '';
-  };
+  }, []);
 
-  const validateConfirmPassword = (confirmPassword: string, password: string): string => {
+  const validateConfirmPassword = useCallback((confirmPassword: string, password: string): string => {
     if (!confirmPassword) return 'Şifre onayı gerekli';
     if (confirmPassword !== password) return 'Şifreler eşleşmiyor';
     return '';
-  };
+  }, []);
 
-  const validateFullName = (fullName: string): string => {
+  const validateFullName = useCallback((fullName: string): string => {
     if (!fullName) return 'Ad soyad gerekli';
     if (fullName.length < 2) return 'Ad soyad en az 2 karakter olmalı';
     return '';
-  };
+  }, []);
 
-  const validateForm = () => {
-    const usernameError = validateUsername(formData.username);
-    const emailError = validateEmail(formData.email);
-    const passwordError = validatePassword(formData.password);
-    const confirmPasswordError = validateConfirmPassword(formData.confirmPassword, formData.password);
-    const fullNameError = validateFullName(formData.fullName);
+  // Validate form and update errors & validity
+  useEffect(() => {
+    const newErrors = {
+      username: validateUsername(formData.username),
+      email: validateEmail(formData.email),
+      password: validatePassword(formData.password),
+      confirmPassword: validateConfirmPassword(formData.confirmPassword, formData.password),
+      fullName: validateFullName(formData.fullName),
+    };
+    
+    setErrors(newErrors);
+    
+    const isValid = !Object.values(newErrors).some(error => error !== '') &&
+                   Object.values(formData).every(value => value.trim() !== '');
+    
+    setIsFormValid(isValid);
+  }, [formData, validateUsername, validateEmail, validatePassword, validateConfirmPassword, validateFullName]);
 
-    setErrors({
-      username: usernameError,
-      email: emailError,
-      password: passwordError,
-      confirmPassword: confirmPasswordError,
-      fullName: fullNameError,
-    });
+  // Handle input changes
+  const handleInputChange = useCallback((field: keyof typeof formData) => (value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
 
-    setIsFormValid(
-      !usernameError && 
-      !emailError && 
-      !passwordError && 
-      !confirmPasswordError && 
-      !fullNameError &&
-      formData.username && 
-      formData.email && 
-      formData.password && 
-      formData.confirmPassword &&
-      formData.fullName
-    );
-  };
-
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
+  // Handle register
   const handleRegister = async () => {
     if (!isFormValid || isLoading) return;
 
@@ -163,7 +142,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         fullName: formData.fullName,
         preferredLanguageCode: 'tr',
       });
-      // Navigation will be handled by App.tsx based on auth state
     } catch (error: any) {
       console.error('Register error:', error);
       
@@ -178,193 +156,166 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     }
   };
 
-  const InputField = ({ 
-    label, 
-    value, 
-    onChangeText, 
-    placeholder, 
-    secureTextEntry = false,
-    error = '',
-    icon,
-    keyboardType = 'default',
-    autoCapitalize = 'none',
-    rightIcon,
-    onRightIconPress,
-  }: {
-    label: string;
-    value: string;
-    onChangeText: (text: string) => void;
-    placeholder: string;
-    secureTextEntry?: boolean;
-    error?: string;
-    icon: string;
-    keyboardType?: any;
-    autoCapitalize?: any;
-    rightIcon?: string;
-    onRightIconPress?: () => void;
-  }) => (
-    <View style={styles.inputContainer}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <View style={[
-        styles.inputWrapper,
-        error ? styles.inputWrapperError : null,
-        value && !error ? styles.inputWrapperSuccess : null,
-      ]}>
-        <Feather name={icon as any} size={20} color={error ? COLORS.error : COLORS.textSecondary} style={styles.inputIcon} />
-        <TextInput
-          style={styles.input}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={COLORS.textSecondary}
-          secureTextEntry={secureTextEntry}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={false}
-        />
-        {rightIcon && (
-          <TouchableOpacity onPress={onRightIconPress} style={styles.rightIconContainer}>
-            <Feather name={rightIcon as any} size={20} color={COLORS.textSecondary} />
-          </TouchableOpacity>
-        )}
-      </View>
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardAvoid}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoid}
+      >
+        {/* Back Button */}
+        <View style={styles.backButtonContainer}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Feather name="chevron-left" size={24} color={COLORS.textPrimary} />
+            <Text style={styles.backButtonText}>Geri</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="none"
+          bounces={false}
         >
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            <Animated.View style={[
-              styles.content,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}>
-              {/* Header */}
-              <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                  <Feather name="arrow-left" size={24} color={COLORS.textPrimary} />
-                </TouchableOpacity>
-                <Text style={styles.title}>Hesap Oluştur</Text>
-                <Text style={styles.subtitle}>MyCheff'e katıl ve yemek keşfet</Text>
+          <Animated.View style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Hesap Oluştur</Text>
+              <Text style={styles.subtitle}>MyCheff'e katıl ve lezzetli tarifleri keşfet</Text>
+            </View>
+
+            {/* Form */}
+            <View style={styles.form}>
+              <CustomTextInput
+                ref={fullNameRef}
+                label="Ad Soyad"
+                placeholder="Adınız ve soyadınız"
+                value={formData.fullName}
+                onChangeText={handleInputChange('fullName')}
+                error={errors.fullName}
+                leftIcon="user"
+                autoCapitalize="words"
+                required
+                nextInputRef={usernameRef}
+              />
+
+              <CustomTextInput
+                ref={usernameRef}
+                label="Kullanıcı Adı"
+                placeholder="kullanici_adi"
+                value={formData.username}
+                onChangeText={handleInputChange('username')}
+                error={errors.username}
+                leftIcon="at-sign"
+                autoCapitalize="none"
+                required
+                nextInputRef={emailRef}
+              />
+
+              <CustomTextInput
+                ref={emailRef}
+                label="E-posta Adresi"
+                placeholder="ornek@email.com"
+                value={formData.email}
+                onChangeText={handleInputChange('email')}
+                error={errors.email}
+                leftIcon="mail"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                required
+                nextInputRef={passwordRef}
+              />
+
+              <CustomTextInput
+                ref={passwordRef}
+                label="Şifre"
+                placeholder="Güçlü bir şifre oluşturun"
+                value={formData.password}
+                onChangeText={handleInputChange('password')}
+                error={errors.password}
+                leftIcon="lock"
+                isPassword
+                required
+                nextInputRef={confirmPasswordRef}
+              />
+
+              <CustomTextInput
+                ref={confirmPasswordRef}
+                label="Şifre Onayı"
+                placeholder="Şifrenizi tekrar giriniz"
+                value={formData.confirmPassword}
+                onChangeText={handleInputChange('confirmPassword')}
+                error={errors.confirmPassword}
+                leftIcon="lock"
+                isPassword
+                required
+                onSubmitEditing={handleRegister}
+              />
+
+              {/* Register Button */}
+              <TouchableOpacity
+                style={[
+                  styles.registerButton,
+                  isFormValid ? styles.registerButtonActive : styles.registerButtonDisabled,
+                ]}
+                onPress={handleRegister}
+                disabled={!isFormValid || isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color={COLORS.white} size="small" />
+                ) : (
+                  <Text style={styles.registerButtonText}>Hesap Oluştur</Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Terms */}
+              <View style={styles.termsContainer}>
+                <Text style={styles.termsText}>
+                  Hesap oluşturarak{' '}
+                  <Text style={styles.termsLink}>Kullanım Koşulları</Text>
+                  {' '}ve{' '}
+                  <Text style={styles.termsLink}>Gizlilik Politikası</Text>
+                  'nı kabul etmiş olursunuz.
+                </Text>
               </View>
+            </View>
 
-              {/* Form */}
-              <View style={styles.form}>
-                <InputField
-                  label="Ad Soyad"
-                  value={formData.fullName}
-                  onChangeText={(text) => handleInputChange('fullName', text)}
-                  placeholder="Adınız ve soyadınız"
-                  autoCapitalize="words"
-                  icon="user"
-                  error={errors.fullName}
-                />
+            {/* Divider */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>veya</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
-                <InputField
-                  label="Kullanıcı Adı"
-                  value={formData.username}
-                  onChangeText={(text) => handleInputChange('username', text)}
-                  placeholder="kullanici_adi"
-                  icon="at-sign"
-                  error={errors.username}
-                />
+            {/* Social Register */}
+            <View style={styles.socialContainer}>
+              <TouchableOpacity style={styles.socialButton}>
+                <Feather name="globe" size={20} color={COLORS.primary} />
+                <Text style={styles.socialButtonText}>Google ile Kayıt Ol</Text>
+              </TouchableOpacity>
+            </View>
 
-                <InputField
-                  label="E-posta Adresi"
-                  value={formData.email}
-                  onChangeText={(text) => handleInputChange('email', text)}
-                  placeholder="ornek@email.com"
-                  keyboardType="email-address"
-                  icon="mail"
-                  error={errors.email}
-                />
-
-                <InputField
-                  label="Şifre"
-                  value={formData.password}
-                  onChangeText={(text) => handleInputChange('password', text)}
-                  placeholder="Güçlü bir şifre oluşturun"
-                  secureTextEntry={!showPassword}
-                  icon="lock"
-                  error={errors.password}
-                  rightIcon={showPassword ? "eye-off" : "eye"}
-                  onRightIconPress={() => setShowPassword(!showPassword)}
-                />
-
-                <InputField
-                  label="Şifre Onayı"
-                  value={formData.confirmPassword}
-                  onChangeText={(text) => handleInputChange('confirmPassword', text)}
-                  placeholder="Şifrenizi tekrar giriniz"
-                  secureTextEntry={!showConfirmPassword}
-                  icon="lock"
-                  error={errors.confirmPassword}
-                  rightIcon={showConfirmPassword ? "eye-off" : "eye"}
-                  onRightIconPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                />
-
-                {/* Register Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.registerButton,
-                    isFormValid ? styles.registerButtonActive : styles.registerButtonDisabled,
-                  ]}
-                  onPress={handleRegister}
-                  disabled={!isFormValid || isLoading}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color={COLORS.white} size="small" />
-                  ) : (
-                    <Text style={styles.registerButtonText}>Hesap Oluştur</Text>
-                  )}
-                </TouchableOpacity>
-
-                {/* Terms */}
-                <View style={styles.termsContainer}>
-                  <Text style={styles.termsText}>
-                    Hesap oluşturarak{' '}
-                    <Text style={styles.termsLink}>Kullanım Koşulları</Text>
-                    {' '}ve{' '}
-                    <Text style={styles.termsLink}>Gizlilik Politikası</Text>
-                    'nı kabul etmiş olursunuz.
-                  </Text>
-                </View>
-              </View>
-
-              {/* Divider */}
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>veya</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* Social Register */}
-              <View style={styles.socialContainer}>
-                <TouchableOpacity style={styles.socialButton}>
-                  <Feather name="globe" size={20} color={COLORS.primary} />
-                  <Text style={styles.socialButtonText}>Google ile Kayıt Ol</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Login Link */}
-              <View style={styles.loginContainer}>
-                <Text style={styles.loginText}>Zaten hesabın var mı? </Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                  <Text style={styles.loginLink}>Giriş Yap</Text>
-                </TouchableOpacity>
-              </View>
-            </Animated.View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
+            {/* Login Link */}
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Zaten hesabın var mı? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.loginLink}>Giriş Yap</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -379,6 +330,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: Platform.OS === 'ios' ? 100 : 50,
   },
   content: {
     flex: 1,
@@ -388,10 +340,32 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: SPACING.xxxl,
   },
+  backButtonContainer: {
+    position: 'absolute',
+    top: SPACING.sm,
+    left: SPACING.sm,
+    zIndex: 100,
+  },
   backButton: {
-    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: SPACING.md,
     padding: SPACING.sm,
-    marginBottom: SPACING.lg,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  backButtonText: {
+    fontSize: FONT_SIZE.BODY_MEDIUM,
+    fontFamily: FONT_FAMILY.SEMI_BOLD,
+    color: COLORS.textPrimary,
+    marginLeft: SPACING.sm,
   },
   title: {
     fontSize: FONT_SIZE.DISPLAY_SMALL,
@@ -408,49 +382,6 @@ const styles = StyleSheet.create({
   },
   form: {
     marginBottom: SPACING.xl,
-  },
-  inputContainer: {
-    marginBottom: SPACING.lg,
-  },
-  inputLabel: {
-    fontSize: FONT_SIZE.LABEL_LARGE,
-    fontFamily: FONT_FAMILY.MEDIUM,
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.sm,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: SPACING.lg,
-    height: 56,
-  },
-  inputWrapperError: {
-    borderColor: COLORS.error,
-  },
-  inputWrapperSuccess: {
-    borderColor: COLORS.success,
-  },
-  inputIcon: {
-    marginRight: SPACING.md,
-  },
-  input: {
-    flex: 1,
-    fontSize: FONT_SIZE.BODY_LARGE,
-    fontFamily: FONT_FAMILY.REGULAR,
-    color: COLORS.textPrimary,
-  },
-  rightIconContainer: {
-    padding: SPACING.sm,
-  },
-  errorText: {
-    fontSize: FONT_SIZE.BODY_SMALL,
-    fontFamily: FONT_FAMILY.REGULAR,
-    color: COLORS.error,
-    marginTop: SPACING.xs,
   },
   registerButton: {
     height: 56,

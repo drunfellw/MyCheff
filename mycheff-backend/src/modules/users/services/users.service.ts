@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
+import * as bcryptjs from 'bcryptjs';
 import { User } from '../../../entities/user.entity';
 import { UserIngredient } from '../../../entities/user-ingredient.entity';
 import { UserFavorite } from '../../../entities/user-favorite.entity';
@@ -62,14 +62,14 @@ export class UsersService {
     }
 
     // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    const isCurrentPasswordValid = await bcryptjs.compare(currentPassword, user.passwordHash);
     if (!isCurrentPasswordValid) {
       throw new BadRequestException('Current password is incorrect');
     }
 
     // Hash new password
     const saltRounds = 12;
-    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+    const newPasswordHash = await bcryptjs.hash(newPassword, saltRounds);
 
     user.passwordHash = newPasswordHash;
     await this.userRepository.save(user);

@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import { User } from '../../entities/user.entity';
-import * as bcrypt from 'bcrypt';
+import * as bcryptjs from 'bcryptjs';
 
 export async function seedUsers(dataSource: DataSource) {
   const userRepository = dataSource.getRepository(User);
@@ -27,7 +27,7 @@ export async function seedUsers(dataSource: DataSource) {
 
     if (!existingUser) {
       // Hash password
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      const hashedPassword = await bcryptjs.hash(userData.password, 10);
       
       const user = userRepository.create({
         username: userData.username,

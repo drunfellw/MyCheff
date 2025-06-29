@@ -4,8 +4,10 @@ import { errorHandler, ErrorType } from '../utils/errorHandler';
 import { APP_CONFIG } from '../constants';
 
 // API Configuration
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.225.125:3001/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.160.125:3001/api';
 const API_VERSION = 'v1';
+
+console.log('API_BASE_URL', API_BASE_URL);
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -178,11 +180,17 @@ export const api = {
 
 // Auth utilities
 export const authUtils = {
-  setTokens: async (accessToken: string, refreshToken: string) => {
-    await AsyncStorage.multiSet([
+  setTokens: async (accessToken: string, refreshToken?: string) => {
+    const items: [string, string][] = [
       [STORAGE_KEYS.ACCESS_TOKEN, accessToken],
-      [STORAGE_KEYS.REFRESH_TOKEN, refreshToken],
-    ]);
+    ];
+    
+    // Only add refreshToken if it's provided
+    if (refreshToken) {
+      items.push([STORAGE_KEYS.REFRESH_TOKEN, refreshToken]);
+    }
+    
+    await AsyncStorage.multiSet(items);
   },
 
   clearTokens: async () => {

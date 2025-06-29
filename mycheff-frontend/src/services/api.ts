@@ -22,15 +22,15 @@ export const authAPI = {
   login: async (email: string, password: string): Promise<{
     user: User;
     token: string;
-    refreshToken: string;
+    refreshToken?: string;
   }> => {
     const response = await api.post<{
       user: User;
       token: string;
-      refreshToken: string;
+      refreshToken?: string;
     }>('/auth/login', { email, password });
     
-    // Store tokens
+    // Store tokens (refreshToken might be undefined)
     await authUtils.setTokens(response.token, response.refreshToken);
     
     return response;
@@ -45,15 +45,15 @@ export const authAPI = {
   }): Promise<{
     user: User;
     token: string;
-    refreshToken: string;
+    refreshToken?: string;
   }> => {
     const response = await api.post<{
       user: User;
       token: string;
-      refreshToken: string;
+      refreshToken?: string;
     }>('/auth/register', userData);
     
-    // Store tokens and language
+    // Store tokens and language (refreshToken might be undefined)
     await authUtils.setTokens(response.token, response.refreshToken);
     if (userData.preferredLanguage) {
       await authUtils.setLanguage(userData.preferredLanguage);

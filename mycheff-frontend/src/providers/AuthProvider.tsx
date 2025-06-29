@@ -68,7 +68,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Store user data and token
       await AsyncStorage.setItem('authToken', response.token);
-      await AsyncStorage.setItem('refreshToken', response.refreshToken);
+      if (response.refreshToken) {
+        await AsyncStorage.setItem('refreshToken', response.refreshToken);
+      }
       await AsyncStorage.setItem('userData', JSON.stringify(response.user));
       
       setUser(response.user);
@@ -88,7 +90,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Store user data and token
       await AsyncStorage.setItem('authToken', response.token);
-      await AsyncStorage.setItem('refreshToken', response.refreshToken);
+      if (response.refreshToken) {
+        await AsyncStorage.setItem('refreshToken', response.refreshToken);
+      }
       await AsyncStorage.setItem('userData', JSON.stringify(response.user));
       
       setUser(response.user);
