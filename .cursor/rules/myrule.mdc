@@ -1,0 +1,403 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# MyCheff Project Guidelines for Cursor AI
+
+## 🍳 Project Overview
+MyCheff is a comprehensive food and recipe application with:
+- **Mobile App**: React Native + Expo (iOS/Android)
+- **Backend API**: NestJS + TypeScript + PostgreSQL
+- **Admin Panel**: Next.js dashboard
+- **Database**: PostgreSQL with multi-language support
+
+## 🏗️ Architecture Guidelines
+
+### Project Structure
+```
+MyCheff/
+├── mycheff-frontend/          # React Native + Expo mobile app
+├── mycheff-backend/           # NestJS API server
+├── admin-panel/               # Next.js admin dashboard
+├── docs/                      # Project documentation
+├── database/                  # Database scripts and schema
+├── deploy.sh                  # Production deployment script
+└── docker-compose.yml         # Docker configuration
+```
+
+## 📱 Frontend (React Native + Expo) Guidelines
+
+### Recommended Tech Stack
+- React Native with Expo
+- TypeScript (prefer strict mode when possible)
+- Custom component-based navigation system
+- React Query (TanStack Query) for state management
+- AsyncStorage for local data persistence
+
+### Design System Constants
+Consider using these existing constants from `src/constants/` when available:
+
+```typescript
+// Example Colors (customize as needed)
+COLORS.primary = '#2E7D32'      // or your preferred primary color
+COLORS.secondary = '#FF6F00'    // or your preferred secondary color
+COLORS.background = '#FBFBFE'   // or your preferred background
+COLORS.textPrimary = '#230606'  // or your preferred text color
+
+// Typography (Poppins or preferred font family)
+TEXT_STYLES.heading1 = { fontSize: 28, fontFamily: 'Poppins_600SemiBold' }
+TEXT_STYLES.bodyMedium = { fontSize: 14, fontFamily: 'Poppins_400Regular' }
+
+// Spacing (adjust as needed)
+SPACING = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 }
+```
+
+### Component Structure Pattern
+Consider this pattern for screen components when appropriate:
+
+```typescript
+// screens/ExampleScreen.tsx
+import React, { useState, useCallback } from 'react';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
+
+interface ScreenProps {
+  navigation?: {
+    navigate: (screen: string) => void;
+    goBack: () => void;
+  };
+}
+
+const ExampleScreen = React.memo<ScreenProps>(({ navigation }) => {
+  const insets = useSafeAreaInsets();
+  
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Screen content */}
+    </View>
+  );
+});
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.background },
+});
+
+export default ExampleScreen;
+```
+
+### API Integration Suggestion
+Consider this API service pattern when building new services:
+
+```typescript
+// services/api.ts
+const apiClient = axios.create({
+  baseURL: `${process.env.EXPO_PUBLIC_API_URL}/api/v1`,
+  timeout: 15000,
+});
+
+// Include auth token in requests when available
+apiClient.interceptors.request.use(async (config) => {
+  const token = await AsyncStorage.getItem('access_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+```
+
+## 🔧 Backend (NestJS) Guidelines
+
+### Recommended Tech Stack
+- NestJS with TypeScript
+- PostgreSQL with TypeORM
+- JWT authentication with bcrypt password hashing
+- Swagger/OpenAPI documentation
+- class-validator for input validation
+
+### Module Structure Suggestion
+Consider this NestJS module pattern:
+
+```typescript
+// modules/example/example.module.ts
+@Module({
+  imports: [TypeOrmModule.forFeature([ExampleEntity])],
+  controllers: [ExampleController],
+  providers: [ExampleService],
+  exports: [ExampleService],
+})
+export class ExampleModule {}
+```
+
+### Entity Pattern Example
+Database entity convention suggestions:
+
+```typescript
+// entities/example.entity.ts
+@Entity('examples')
+export class ExampleEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 100 })
+  name: string;
+
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
+}
+```
+
+### API Response Format Suggestion
+Consider this standardized response structure:
+
+```typescript
+// Successful response
+{
+  "success": true,
+  "data": any,
+  "message": string,
+  "pagination"?: {
+    "page": number,
+    "limit": number,
+    "total": number,
+    "totalPages": number
+  }
+}
+
+// Error response
+{
+  "success": false,
+  "error": string,
+  "message": string,
+  "statusCode": number
+}
+```
+
+### Controller Pattern Example
+Consider this controller structure when building new controllers:
+
+```typescript
+@Controller('api/v1/examples')
+@ApiTags('Examples')
+export class ExampleController {
+  @Get()
+  @ApiResponse({ status: 200, description: 'Examples retrieved successfully' })
+  async getAll(@Query() query: PaginationDto) {
+    return this.exampleService.findAll(query);
+  }
+}
+```
+
+## 🗄️ Database Guidelines
+
+### Schema Structure Suggestions
+- Consider using `mycheff` schema for organization
+- UUID primary keys are recommended
+- snake_case for column names works well
+- Foreign keys can follow `table_id` convention
+- Include `created_at` and `updated_at` timestamps when useful
+
+### Multi-language Support Pattern
+For content requiring translations, consider this translation table pattern:
+
+```sql
+-- Main table
+CREATE TABLE mycheff.recipes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  cooking_time INTEGER NOT NULL,
+  difficulty VARCHAR(20) DEFAULT 'Medium',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Translation table
+CREATE TABLE mycheff.recipe_translations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  recipe_id UUID REFERENCES mycheff.recipes(id),
+  language_code VARCHAR(5) REFERENCES mycheff.languages(code),
+  title VARCHAR(100) NOT NULL,
+  description TEXT
+);
+```
+
+### Key Tables in Current System
+- `mycheff.users` - User accounts
+- `mycheff.recipes` - Recipe master data
+- `mycheff.recipe_translations` - Multi-language recipe content
+- `mycheff.ingredients` - Ingredient master data
+- `mycheff.categories` - Recipe categories
+- `mycheff.subscription_plans` - Premium subscription plans
+
+## 🔐 Authentication & Security
+
+### JWT Implementation Suggestions
+- Use strong JWT secrets (32+ characters recommended)
+- Consider including user role in JWT payload
+- Implement refresh token mechanism when needed
+- Set appropriate token expiration times
+
+### Input Validation Approach
+Consider using class-validator for input validation:
+
+```typescript
+export class CreateRecipeDto {
+  @IsString()
+  @Length(3, 100)
+  title: string;
+
+  @IsInt()
+  @Min(1)
+  cookingTime: number;
+
+  @IsEnum(['Easy', 'Medium', 'Hard'])
+  difficulty: string;
+}
+```
+
+### Rate Limiting Suggestions
+Consider applying rate limiting to public endpoints:
+- Authentication: 5 requests per minute
+- Recipe search: 30 requests per minute
+- General API: 100 requests per minute
+
+## 🌍 Multi-Language Support
+
+### Language Implementation
+- Support multiple languages based on user preference
+- Use translation tables for content
+- Consider language-specific content when needed
+- Support proper character encoding for international content
+
+### Content Guidelines
+- Adapt content names to target audience/language
+- Use appropriate terminology for the target market
+- Consider cultural preferences in content organization
+- Support regional variations when beneficial
+
+## 📊 API Endpoints Reference
+
+### Standard Endpoints Available
+```
+Authentication:
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+POST /api/v1/auth/logout
+
+Recipes:
+GET  /api/v1/recipes?page=1&limit=10&lang=tr
+GET  /api/v1/recipes/featured
+GET  /api/v1/recipes/search?q=query
+GET  /api/v1/recipes/:id
+
+Categories:
+GET  /api/v1/categories
+
+Ingredients:
+GET  /api/v1/ingredients
+GET  /api/v1/ingredients/search
+```
+
+## 🎨 UI/UX Guidelines
+
+### Current Color Scheme
+- Primary: Green (#2E7D32) - can be customized
+- Secondary: Orange (#FF6F00) - can be adjusted
+- Background: Light gray (#FBFBFE) - adaptable
+- Text: Dark gray (#230606) - modifiable
+
+### Typography Recommendations
+- Font Family: Poppins (or suitable alternative)
+- Sizes: 12px (xs) to 48px (5xl)
+- Line Height: 1.5 for body text
+
+### Component Naming Suggestions
+- Use PascalCase for component names
+- Consider prefixing screens: `HomeScreen`, `RecipeDetailScreen`
+- Use descriptive names: `RecipeCard`, `CategoryButton`, `SearchBar`
+
+## 🔄 State Management
+
+### React Query Pattern Example
+```typescript
+// For data fetching
+const { data, isLoading, error } = useQuery({
+  queryKey: ['recipes', filters],
+  queryFn: () => apiService.getRecipes(filters),
+});
+
+// For mutations
+const mutation = useMutation({
+  mutationFn: apiService.createRecipe,
+  onSuccess: () => queryClient.invalidateQueries(['recipes']),
+});
+```
+
+## 🚀 Production & Deployment
+
+### Environment Variables Reference
+```env
+# Backend
+NODE_ENV=production
+DATABASE_SCHEMA=mycheff
+JWT_SECRET=your-secure-secret-key
+
+# Frontend
+EXPO_PUBLIC_API_URL=https://api.yourdomain.com
+EXPO_PUBLIC_ENVIRONMENT=production
+```
+
+### File Organization Suggestions
+- Keep constants in `src/constants/`
+- API services in `src/services/`
+- Types in `src/types/`
+- Utilities in `src/utils/`
+- Components in `src/components/`
+
+## 📝 Code Quality
+
+### TypeScript Recommendations
+- Use strict mode when possible
+- Define interfaces for props and data structures
+- Minimize use of `any` type, prefer `unknown` when necessary
+- Use enums for fixed value sets
+
+### Error Handling Suggestions
+- Handle API errors gracefully
+- Use try-catch blocks for async operations
+- Provide user-friendly error messages in appropriate language
+- Log errors for debugging when needed
+
+### Performance Considerations
+- Use React.memo for expensive components when beneficial
+- Implement lazy loading for large lists
+- Optimize images and assets
+- Use proper key props for lists
+
+## 🧪 Testing
+
+### Test Users Available
+```
+admin@mycheff.com / admin123 (Admin role)
+test@mycheff.com / test123 (User role)
+chef@mycheff.com / chef123 (Chef role)
+```
+
+### Sample Data Available
+- 20+ recipe examples
+- 50+ ingredient examples
+- Multiple categories for testing
+
+## 🔧 Development Approach
+
+1. **Database First**: Consider designing schema before implementation
+2. **API First**: Consider implementing backend endpoints before frontend
+3. **Type Safety**: Define TypeScript interfaces for data structures
+4. **Documentation**: Update API docs for changes
+5. **Testing**: Test with sample data
+6. **Responsive**: Ensure UI works on different screen sizes
+
+Feel free to adapt these guidelines based on project needs and requirements. These are suggestions to maintain consistency while allowing flexibility for innovation and improvement.
