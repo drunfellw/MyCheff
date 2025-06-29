@@ -1,0 +1,581 @@
+# FULLSTACK MOBILE APPLICATION ARCHITECTURE GUIDE
+# Complete Tech Stack: React Native + Expo + NestJS + PostgreSQL + TypeScript
+
+## 📱 PROJECT OVERVIEW
+This document outlines a production-ready fullstack mobile application architecture 
+that can be adapted for any domain (e-commerce, social media, content management, etc.).
+
+## 🏗️ ARCHITECTURE STACK
+
+### FRONTEND - React Native + Expo
+- **Framework**: React Native 0.79+
+- **Platform**: Expo SDK 53+
+- **Language**: TypeScript 5+
+- **State Management**: React Query (TanStack Query)
+- **Navigation**: Custom component-based navigation
+- **UI Library**: Custom design system with Ionicons
+- **Storage**: AsyncStorage for local data
+- **HTTP Client**: Axios with interceptors
+
+### BACKEND - NestJS
+- **Framework**: NestJS 10+
+- **Language**: TypeScript 5+
+- **ORM**: TypeORM with PostgreSQL
+- **Authentication**: JWT + Refresh tokens
+- **Validation**: class-validator + class-transformer
+- **API Documentation**: Swagger/OpenAPI
+- **Rate Limiting**: Built-in throttling
+- **CORS**: Configurable cross-origin support
+
+### DATABASE - PostgreSQL
+- **Database**: PostgreSQL 15+
+- **Schema**: Multi-tenant ready structure
+- **Indexing**: Optimized with proper indexes
+- **Full-text Search**: PostgreSQL tsvector
+- **Migrations**: TypeORM migrations
+- **Multi-language**: Translation tables pattern
+
+### DEPLOYMENT
+- **Backend**: Docker containers
+- **Database**: PostgreSQL with Docker
+- **Admin Panel**: Next.js dashboard (optional)
+- **Mobile**: Expo build service
+
+## 📁 PROJECT STRUCTURE
+
+```
+project-root/
+├── mobile-frontend/          # React Native + Expo
+│   ├── src/
+│   │   ├── components/       # Reusable UI components
+│   │   ├── screens/          # App screens
+│   │   ├── services/         # API services
+│   │   ├── constants/        # Design system constants
+│   │   ├── types/            # TypeScript definitions
+│   │   ├── utils/            # Helper functions
+│   │   └── providers/        # Context providers
+│   ├── assets/              # Images, fonts, etc.
+│   ├── .env                 # Environment variables
+│   └── package.json
+├── backend-api/             # NestJS API
+│   ├── src/
+│   │   ├── modules/         # Feature modules
+│   │   ├── entities/        # TypeORM entities
+│   │   ├── dto/             # Data transfer objects
+│   │   ├── guards/          # Authentication guards
+│   │   ├── interceptors/    # Request/response interceptors
+│   │   └── main.ts          # Application entry point
+│   ├── database/            # Migration files
+│   ├── docker-compose.yml   # Development environment
+│   └── package.json
+├── admin-panel/             # Next.js admin (optional)
+│   ├── src/
+│   │   ├── pages/
+│   │   ├── components/
+│   │   └── lib/
+│   └── package.json
+├── database/                # SQL scripts and seeds
+│   ├── schema.sql
+│   ├── seed-data.sql
+│   └── migrations/
+├── deploy.sh               # Deployment script
+├── stop.sh                 # Shutdown script
+└── README.md
+```
+
+## 🎨 FRONTEND ARCHITECTURE (React Native + Expo)
+
+### Design System Constants
+```typescript
+// constants/index.ts
+export const COLORS = {
+  primary: '#YOUR_PRIMARY_COLOR',
+  background: '#FBFBFE',
+  textPrimary: '#230606',
+  // ... more colors
+};
+
+export const SPACING = {
+  xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48
+};
+
+export const TEXT_STYLES = {
+  heading1: { fontSize: 28, fontFamily: 'Inter_600SemiBold' },
+  bodyMedium: { fontSize: 14, fontFamily: 'Inter_400Regular' },
+  // ... more text styles
+};
+```
+
+### Screen Structure Template
+```typescript
+// screens/ExampleScreen.tsx
+import React, { useState, useCallback } from 'react';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
+
+import { NavigationBar, ScreenHeader } from '../components';
+import { apiService } from '../services/api';
+import { COLORS, SPACING } from '../constants';
+
+interface ScreenProps {
+  navigation?: {
+    navigate: (screen: string) => void;
+    goBack: () => void;
+  };
+}
+
+const ExampleScreen = React.memo<ScreenProps>(({ navigation }) => {
+  const insets = useSafeAreaInsets();
+  const [activeTab, setActiveTab] = useState<string>('home');
+
+  // Data fetching with React Query
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['example-data'],
+    queryFn: () => apiService.getExampleData(),
+  });
+
+  const handleTabPress = useCallback((tabId: string) => {
+    setActiveTab(tabId);
+    // Navigation logic
+  }, []);
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScrollView style={styles.scrollView}>
+        {/* Screen content */}
+      </ScrollView>
+      
+      <NavigationBar 
+        activeTab={activeTab}
+        onTabPress={handleTabPress}
+      />
+    </View>
+  );
+});
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.background },
+  scrollView: { flex: 1 },
+});
+
+export default ExampleScreen;
+```
+
+### API Service Structure
+```typescript
+// services/api.ts
+import axios, { AxiosInstance } from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+const apiClient: AxiosInstance = axios.create({
+  baseURL: `${API_BASE_URL}/v1`,
+  timeout: 15000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// Request interceptor for auth
+apiClient.interceptors.request.use(async (config) => {
+  const token = await AsyncStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Response interceptor for error handling
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    // Handle token refresh logic
+    return Promise.reject(error);
+  }
+);
+
+export const apiService = {
+  // Generic CRUD operations
+  get: <T>(url: string) => 
+    apiClient.get<ApiResponse<T>>(url).then(res => res.data.data),
+  
+  post: <T>(url: string, data?: any) => 
+    apiClient.post<ApiResponse<T>>(url, data).then(res => res.data.data),
+  
+  // Paginated requests
+  getPaginated: <T>(url: string) => 
+    apiClient.get<PaginatedResponse<T>>(url).then(res => res.data),
+};
+```
+
+## 🔧 BACKEND ARCHITECTURE (NestJS)
+
+### Module Structure Template
+```typescript
+// modules/example/example.module.ts
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ExampleController } from './example.controller';
+import { ExampleService } from './example.service';
+import { ExampleEntity } from './entities/example.entity';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([ExampleEntity])],
+  controllers: [ExampleController],
+  providers: [ExampleService],
+  exports: [ExampleService],
+})
+export class ExampleModule {}
+```
+
+### Entity Structure Template
+```typescript
+// entities/example.entity.ts
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+
+@Entity('examples')
+export class ExampleEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 100 })
+  name: string;
+
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}
+```
+
+### Controller Structure Template
+```typescript
+// controllers/example.controller.ts
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ExampleService } from './example.service';
+import { CreateExampleDto, UpdateExampleDto } from './dto';
+
+@ApiTags('Examples')
+@Controller('examples')
+export class ExampleController {
+  constructor(private readonly exampleService: ExampleService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get all examples with pagination' })
+  @ApiResponse({ status: 200, description: 'Examples retrieved successfully' })
+  async findAll(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
+    return this.exampleService.findAll(page, limit);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get example by ID' })
+  async findOne(@Param('id') id: string) {
+    return this.exampleService.findOne(id);
+  }
+
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Create new example' })
+  async create(@Body() createDto: CreateExampleDto) {
+    return this.exampleService.create(createDto);
+  }
+}
+```
+
+### Service Structure Template
+```typescript
+// services/example.service.ts
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ExampleEntity } from './entities/example.entity';
+
+@Injectable()
+export class ExampleService {
+  constructor(
+    @InjectRepository(ExampleEntity)
+    private readonly exampleRepository: Repository<ExampleEntity>,
+  ) {}
+
+  async findAll(page: number = 1, limit: number = 20) {
+    const [data, total] = await this.exampleRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { createdAt: 'DESC' },
+    });
+
+    return {
+      success: true,
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findOne(id: string): Promise<ExampleEntity> {
+    const example = await this.exampleRepository.findOne({ where: { id } });
+    if (!example) {
+      throw new NotFoundException(`Example with ID ${id} not found`);
+    }
+    return example;
+  }
+
+  async create(createDto: CreateExampleDto): Promise<ExampleEntity> {
+    const example = this.exampleRepository.create(createDto);
+    return this.exampleRepository.save(example);
+  }
+}
+```
+
+## 🗄️ DATABASE DESIGN PATTERNS
+
+### Multi-language Support Pattern
+```sql
+-- Main entity table
+CREATE TABLE examples (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  is_active BOOLEAN DEFAULT TRUE,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Translation table pattern
+CREATE TABLE example_translations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  example_id UUID REFERENCES examples(id) ON DELETE CASCADE,
+  language_code VARCHAR(5) NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  search_vector TSVECTOR,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(example_id, language_code)
+);
+
+-- Full-text search index
+CREATE INDEX idx_example_translations_search ON example_translations USING gin(search_vector);
+```
+
+### User Management Pattern
+```sql
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  username VARCHAR(50) UNIQUE NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  preferred_language VARCHAR(5) DEFAULT 'en',
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  refresh_token VARCHAR(500) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## 🚀 DEPLOYMENT SETUP
+
+### Docker Compose for Development
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend-api
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://appuser:apppass@postgres:5432/appdb
+      JWT_SECRET: your-jwt-secret
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+```
+
+### Environment Variables Template
+```bash
+# Backend .env
+NODE_ENV=development
+PORT=3001
+DATABASE_URL=postgresql://username:password@localhost:5432/database
+JWT_SECRET=your-jwt-secret-key
+JWT_EXPIRATION=1h
+REFRESH_TOKEN_EXPIRATION=7d
+CORS_ORIGIN=http://localhost:8081
+
+# Frontend .env
+EXPO_PUBLIC_API_URL=http://192.168.1.100:3001/api
+```
+
+## 📦 PACKAGE.JSON DEPENDENCIES
+
+### Frontend Dependencies
+```json
+{
+  "dependencies": {
+    "expo": "~53.0.12",
+    "react-native": "0.79.4",
+    "@tanstack/react-query": "^4.36.1",
+    "axios": "^1.6.0",
+    "@react-native-async-storage/async-storage": "1.21.0",
+    "react-native-safe-area-context": "4.8.2",
+    "@expo/vector-icons": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "~18.2.45",
+    "typescript": "^5.3.0"
+  }
+}
+```
+
+### Backend Dependencies
+```json
+{
+  "dependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/typeorm": "^10.0.0",
+    "@nestjs/jwt": "^10.1.1",
+    "@nestjs/swagger": "^7.1.8",
+    "typeorm": "^0.3.17",
+    "pg": "^8.11.3",
+    "class-validator": "^0.14.0",
+    "bcrypt": "^5.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.3.1",
+    "typescript": "^5.1.3"
+  }
+}
+```
+
+## 🎯 DEVELOPMENT WORKFLOW
+
+### 1. Initial Setup
+```bash
+# Clone and setup
+git clone <repository>
+cd project-root
+
+# Backend setup
+cd backend-api
+npm install
+npm run migration:run
+npm run seed
+
+# Frontend setup  
+cd ../mobile-frontend
+npm install
+npx expo install
+
+# Start development
+npm run dev:all  # Runs backend + frontend + db
+```
+
+### 2. Development Commands
+```bash
+# Backend
+npm run start:dev        # Development server
+npm run migration:generate # Generate migration
+npm run migration:run    # Run migrations
+
+# Frontend
+npm start               # Start Expo dev server
+npm run android        # Run on Android
+npm run ios           # Run on iOS
+```
+
+### 3. Build & Deploy
+```bash
+# Backend
+npm run build
+docker build -t app-backend .
+
+# Frontend
+npx expo build:android
+npx expo build:ios
+```
+
+## 🔐 SECURITY BEST PRACTICES
+
+1. **Authentication**: JWT + Refresh token pattern
+2. **Input Validation**: class-validator on all DTOs
+3. **Rate Limiting**: Throttling on API endpoints
+4. **CORS**: Properly configured origins
+5. **Environment Variables**: All secrets in .env files
+6. **SQL Injection**: TypeORM parameterized queries
+7. **Password Hashing**: bcrypt with salt rounds
+
+## 📈 SCALABILITY CONSIDERATIONS
+
+1. **Database**: Proper indexing and query optimization
+2. **API**: Pagination on all list endpoints
+3. **Caching**: React Query on frontend, Redis option for backend
+4. **File Storage**: External service (AWS S3, Cloudinary)
+5. **Background Jobs**: Queue system for heavy operations
+6. **Monitoring**: Logging and health check endpoints
+
+## 🧪 TESTING STRATEGY
+
+1. **Backend**: Unit tests with Jest, E2E with Supertest
+2. **Frontend**: Component tests with Jest, E2E with Detox
+3. **Database**: Migration tests and data integrity checks
+4. **API**: Automated API testing with documented schemas
+
+## 📚 CUSTOMIZATION GUIDE
+
+This architecture can be adapted for any domain by:
+
+1. **Changing Entities**: Replace example entities with your domain models
+2. **Updating Business Logic**: Modify services for your use case
+3. **Adapting UI**: Update components and screens for your design
+4. **Configuring Database**: Adjust schema for your data requirements
+5. **Adding Features**: Extend with push notifications, real-time features, etc.
+
+## 🔄 COMMON PATTERNS
+
+1. **CRUD Operations**: Standard Create, Read, Update, Delete
+2. **Search & Filter**: Full-text search with filtering options
+3. **User Management**: Registration, login, profile management
+4. **File Upload**: Image/document upload with validation
+5. **Multi-language**: Translation tables and language switching
+6. **Pagination**: Cursor and offset-based pagination
+7. **Real-time**: WebSocket integration for live updates
+
+This architecture provides a solid foundation for building scalable, 
+maintainable fullstack mobile applications with modern best practices. 

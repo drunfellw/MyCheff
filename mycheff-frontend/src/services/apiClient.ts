@@ -1,9 +1,10 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { errorHandler, ErrorType } from '../utils/errorHandler';
+import { APP_CONFIG } from '../constants';
 
 // API Configuration
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.mycheff.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.225.125:3001/api';
 const API_VERSION = 'v1';
 
 // Storage keys
@@ -16,7 +17,7 @@ const STORAGE_KEYS = {
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
   baseURL: `${API_BASE_URL}/${API_VERSION}`,
-  timeout: 10000,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -95,15 +96,29 @@ apiClient.interceptors.response.use(
   }
 );
 
-// API response wrapper
+// API response wrapper - matches backend response format
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
   errors?: string[];
-  timestamp: string;
+  timestamp?: string;
 }
 
+// Backend pagination response format
+export interface BackendPaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  message?: string;
+}
+
+// Frontend expected pagination format  
 export interface PaginatedResponse<T> {
   data: T[];
   pagination: {
@@ -133,12 +148,32 @@ export const api = {
   delete: <T>(url: string, config?: AxiosRequestConfig): Promise<T> =>
     apiClient.delete<ApiResponse<T>>(url, config).then(response => response.data.data),
 
-  // For paginated responses
+  // For paginated responses - transform backend format to frontend format
   getPaginated: <T>(url: string, config?: AxiosRequestConfig): Promise<PaginatedResponse<T>> =>
-    apiClient.get<PaginatedResponse<T>>(url, config).then(response => response.data),
+    apiClient.get<BackendPaginatedResponse<T>>(url, config).then(response => {
+      const backendData = response.data;
+      return {
+        data: backendData.data,
+        pagination: {
+          ...backendData.pagination,
+          hasNext: backendData.pagination.page < backendData.pagination.totalPages,
+          hasPrev: backendData.pagination.page > 1,
+        }
+      };
+    }),
 
   postPaginated: <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<PaginatedResponse<T>> =>
-    apiClient.post<PaginatedResponse<T>>(url, data, config).then(response => response.data),
+    apiClient.post<BackendPaginatedResponse<T>>(url, data, config).then(response => {
+      const backendData = response.data;
+      return {
+        data: backendData.data,
+        pagination: {
+          ...backendData.pagination,
+          hasNext: backendData.pagination.page < backendData.pagination.totalPages,
+          hasPrev: backendData.pagination.page > 1,
+        }
+      };
+    }),
 };
 
 // Auth utilities

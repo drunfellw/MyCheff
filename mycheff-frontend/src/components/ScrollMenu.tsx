@@ -9,10 +9,15 @@ import {
   CATEGORY_ICONS,
   ANIMATION_DURATION 
 } from '../constants';
-import type { Category } from '../types';
+
+interface CategoryItem {
+  id: string;
+  name: string;
+  icon?: string;
+}
 
 interface ScrollMenuProps {
-  categories?: Category[];
+  categories?: CategoryItem[];
   selectedCategory?: string;
   onCategorySelect?: (categoryId: string) => void;
 }
@@ -44,13 +49,25 @@ const ScrollMenu = React.memo<ScrollMenuProps>(({
     return CATEGORY_ICONS[iconName as keyof typeof CATEGORY_ICONS] || 'ellipse-outline';
   }, []);
 
+  // Filter unique categories by name to avoid duplicates
+  const uniqueCategories = useMemo(() => {
+    const seen = new Set<string>();
+    return categories.filter(category => {
+      if (seen.has(category.name)) {
+        return false;
+      }
+      seen.add(category.name);
+      return true;
+    });
+  }, [categories]);
+
   // Calculate indicator position
   const indicatorPosition = useMemo(() => {
-    const selectedIndex = categories.findIndex(cat => cat.id === selectedCategory);
+    const selectedIndex = uniqueCategories.findIndex(cat => cat.id === selectedCategory);
     if (selectedIndex === -1) return 0;
     
     return selectedIndex * (CATEGORY_ITEM.WIDTH + COMPONENT_SPACING.CARD.MARGIN);
-  }, [selectedCategory, categories]);
+  }, [selectedCategory, uniqueCategories]);
 
   // Animate indicator when selection changes
   useEffect(() => {
@@ -66,7 +83,7 @@ const ScrollMenu = React.memo<ScrollMenuProps>(({
     onCategorySelect?.(categoryId);
   }, [onCategorySelect]);
 
-  const renderCategoryItem = useCallback((category: Category, index: number) => {
+  const renderCategoryItem = useCallback((category: CategoryItem, index: number) => {
     const isSelected = category.id === selectedCategory;
     
     return (
@@ -108,7 +125,7 @@ const ScrollMenu = React.memo<ScrollMenuProps>(({
         style={styles.scrollView}
         decelerationRate="normal"
       >
-        {categories.map(renderCategoryItem)}
+        {uniqueCategories.map(renderCategoryItem)}
         
         {/* Animated Indicator */}
         <View style={styles.indicatorContainer}>

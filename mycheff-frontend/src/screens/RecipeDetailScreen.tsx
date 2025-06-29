@@ -13,12 +13,16 @@ import {
   Modal,
   StatusBar,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 
 import NavigationBar from '../components/NavigationBar';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
+import { recipeAPI } from '../services/api';
+import type { Recipe } from '../types';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -76,7 +80,8 @@ interface RecipeDetailScreenProps {
   };
   route?: {
     params: {
-      recipe: Recipe;
+      recipe?: Recipe;
+      recipeId?: string;
     };
   };
 }
@@ -87,7 +92,7 @@ interface RecipeDetailScreenProps {
  * Modern Instagram-style recipe detail page
  * Full-screen image with overlay content
  * Smooth scrolling with parallax effect
- * Backend-ready structure
+ * Backend-integrated with real Turkish recipe data
  */
 const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
@@ -98,58 +103,51 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
   const [isFullScreenVisible, setIsFullScreenVisible] = useState<boolean>(false);
   const [fullScreenImageIndex, setFullScreenImageIndex] = useState<number>(0);
 
-  // Mock recipe data - Backend'den gelecek
-  const recipe: Recipe = useMemo(() => route?.params?.recipe || {
-    id: '1',
-    title: 'Creamy Mushroom Risotto',
-    description: 'A rich and creamy Italian risotto made with fresh mushrooms, parmesan cheese, and aromatic herbs. Perfect for a cozy dinner.',
-    media: [
-      { type: 'image', url: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=800&h=600&fit=crop' },
-      { type: 'image', url: 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800&h=600&fit=crop' },
-      { type: 'image', url: 'https://images.unsplash.com/photo-1485962398705-ef6a13c41e8f?w=800&h=600&fit=crop' },
-    ],
-    category: 'Main Course',
-    difficulty: 'Medium',
-    cookingTime: '35 min',
-    servings: 4,
-    rating: 4.8,
-    reviewCount: 127,
-    isFavorite: false,
-    ingredients: [
-      { id: '1', name: 'Arborio Rice', amount: '1.5', unit: 'cups' },
-      { id: '2', name: 'Mixed Mushrooms', amount: '300', unit: 'g' },
-      { id: '3', name: 'Vegetable Broth', amount: '4', unit: 'cups' },
-      { id: '4', name: 'Onion', amount: '1', unit: 'medium' },
-      { id: '5', name: 'Garlic Cloves', amount: '3', unit: 'pieces' },
-      { id: '6', name: 'Parmesan Cheese', amount: '100', unit: 'g' },
-      { id: '7', name: 'White Wine', amount: '1/2', unit: 'cup' },
-      { id: '8', name: 'Butter', amount: '2', unit: 'tbsp' },
-      { id: '9', name: 'Olive Oil', amount: '2', unit: 'tbsp' },
-      { id: '10', name: 'Fresh Thyme', amount: '1', unit: 'tsp' },
-    ],
-    instructions: [
-      { id: '1', step: 1, description: 'Heat the vegetable broth in a saucepan and keep it warm over low heat.' },
-      { id: '2', step: 2, description: 'In a large pan, heat olive oil and butter. Add diced onion and cook until translucent.' },
-      { id: '3', step: 3, description: 'Add minced garlic and sliced mushrooms. Cook until mushrooms are golden brown.' },
-      { id: '4', step: 4, description: 'Add arborio rice and stir until the grains are well coated.' },
-      { id: '5', step: 5, description: 'Pour in white wine and stir until absorbed.' },
-      { id: '6', step: 6, description: 'Add warm broth one ladle at a time, stirring constantly until absorbed before adding more.' },
-      { id: '7', step: 7, description: 'Stir in grated parmesan cheese and fresh thyme. Season with salt and pepper.' },
-    ],
-    nutrition: {
-      calories: 385,
-      protein: 12,
-      carbs: 58,
-      fat: 14,
-      fiber: 3,
-    },
-    author: {
-      name: 'Chef Maria',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
-      verified: true,
-    },
-    tags: ['Italian', 'Vegetarian', 'Comfort Food', 'Dinner'],
-  }, [route?.params?.recipe]);
+  // Get recipe ID from route params
+  const recipeId = route?.params?.recipeId || route?.params?.recipe?.id;
+
+  // Fetch recipe data from backend
+  const { data: recipeResponse, isLoading, error } = useQuery({
+    queryKey: ['recipe', recipeId],
+    queryFn: () => recipeAPI.getRecipeById(recipeId!),
+    enabled: !!recipeId,
+  });
+
+  // Extract recipe from API response
+  const recipe = recipeResponse;
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Tarif yükleniyor...</Text>
+      </View>
+    );
+  }
+
+  // Error state
+  if (error || !recipe) {
+    return (
+      <View style={[styles.container, styles.errorContainer]}>
+        <Ionicons name="alert-circle-outline" size={64} color={COLORS.textMuted} />
+        <Text style={styles.errorText}>Tarif bulunamadı</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={() => navigation?.goBack()}
+        >
+          <Text style={styles.retryButtonText}>Geri Dön</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Update favorite state when recipe data changes
+  React.useEffect(() => {
+    if (recipe) {
+      setIsFavorite(recipe.isFavorite || false);
+    }
+  }, [recipe]);
 
   // Toggle favorite
   const handleToggleFavorite = useCallback(() => {
@@ -816,6 +814,37 @@ const styles = StyleSheet.create({
     width: screenWidth,
     height: screenHeight,
     backgroundColor: '#000000',
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: FONT_SIZE.MD,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+    marginTop: SPACING.md,
+  },
+  errorContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: FONT_SIZE.MD,
+    fontWeight: '500',
+    color: COLORS.textMuted,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.xl,
+  },
+  retryButton: {
+    padding: SPACING.md,
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.MD,
+  },
+  retryButtonText: {
+    fontSize: FONT_SIZE.MD,
+    fontWeight: '600',
+    color: COLORS.white,
   },
 });
 

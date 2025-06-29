@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import {
   SHADOW_PRESETS,
   SPACING 
 } from '../constants';
+import { recipesAPI } from '../services/recipesAPI';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -28,69 +29,17 @@ interface Instruction {
 }
 
 interface CookingStepsScreenProps {
-  navigation?: {
-    navigate: (screen: string) => void;
+  navigation: {
+    navigate: (screen: string, params?: any) => void;
     goBack: () => void;
   };
-  route?: {
+  route: {
     params: {
-      instructions?: Instruction[];
-      recipeName?: string;
+      recipeId: string;
+      recipeTitle: string;
     };
   };
 }
-
-// Mock recipe instructions - Backend'den gelecek
-const MOCK_INSTRUCTIONS: Instruction[] = [
-  {
-    id: 'step-1',
-    step: 1,
-    description: 'Heat olive oil in a large, heavy-bottomed pan over medium heat. Add the diced onion and cook until softened and translucent.',
-    tips: 'Make sure the onion doesn\'t brown, just softened'
-  },
-  {
-    id: 'step-2',
-    step: 2,
-    description: 'Add the minced garlic and cook until fragrant. Be careful not to burn the garlic.',
-    tips: 'Garlic burns quickly, so keep stirring'
-  },
-  {
-    id: 'step-3',
-    step: 3,
-    description: 'Add the Arborio rice to the pan and stir to coat each grain with the oil. Toast the rice until the edges become translucent.',
-    tips: 'This step is crucial for creamy risotto texture'
-  },
-  {
-    id: 'step-4',
-    step: 4,
-    description: 'Pour in the white wine and stir constantly until the wine is completely absorbed by the rice. The alcohol will cook off, leaving a rich flavor.',
-    tips: 'Keep stirring to prevent sticking'
-  },
-  {
-    id: 'step-5',
-    step: 5,
-    description: 'Add the warm mushroom broth one ladle at a time, stirring constantly. Wait until each addition is almost completely absorbed before adding the next.',
-    tips: 'Patience is key - don\'t rush this process'
-  },
-  {
-    id: 'step-6',
-    step: 6,
-    description: 'Add the sliced mushrooms and continue stirring. The rice should be creamy but still have a slight bite (al dente).',
-    tips: 'Taste test for perfect texture'
-  },
-  {
-    id: 'step-7',
-    step: 7,
-    description: 'Remove from heat and stir in the grated Parmesan cheese, butter, and fresh herbs. Season with salt and pepper to taste.',
-    tips: 'The residual heat will melt the cheese perfectly'
-  },
-  {
-    id: 'step-8',
-    step: 8,
-    description: 'Serve immediately in warmed bowls, garnished with extra Parmesan, fresh herbs, and a drizzle of truffle oil if desired.',
-    tips: 'Risotto is best served immediately while hot and creamy'
-  }
-];
 
 /**
  * CookingStepsScreen Component
@@ -98,20 +47,34 @@ const MOCK_INSTRUCTIONS: Instruction[] = [
  * Professional step-by-step cooking instructions screen
  * Features progress tracking and intuitive navigation
  */
-const CookingStepsScreen = React.memo<CookingStepsScreenProps>(({ navigation, route }) => {
+const CookingStepsScreen: React.FC<CookingStepsScreenProps> = ({ navigation, route }) => {
+  const { recipeId, recipeTitle } = route.params;
   const insets = useSafeAreaInsets();
-  const [currentStep, setCurrentStep] = useState<number>(0);
-  
-  // Use mock data if no instructions provided
-  const instructions = useMemo(() => 
-    route?.params?.instructions || MOCK_INSTRUCTIONS, 
-    [route?.params?.instructions]
-  );
-  
-  const recipeName = useMemo(() => 
-    route?.params?.recipeName || 'Mushroom Risotto', 
-    [route?.params?.recipeName]
-  );
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const [instructions, setInstructions] = useState<Instruction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch recipe instructions from API
+  useEffect(() => {
+    const fetchInstructions = async () => {
+      try {
+        setIsLoading(true);
+        const response = await recipesAPI.getById(recipeId);
+        if (response.instructions) {
+          setInstructions(response.instructions);
+        }
+      } catch (error) {
+        console.error('Error fetching recipe instructions:', error);
+        setInstructions([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInstructions();
+  }, [recipeId]);
 
   const handleNextStep = useCallback(() => {
     if (currentStep < instructions.length - 1) {
@@ -130,17 +93,17 @@ const CookingStepsScreen = React.memo<CookingStepsScreenProps>(({ navigation, ro
   }, [navigation]);
 
   const currentInstruction = useMemo(() => 
-    instructions[currentStep], 
+    instructions[currentStep - 1], 
     [instructions, currentStep]
   );
   
   const progress = useMemo(() => 
-    ((currentStep + 1) / instructions.length) * 100, 
+    ((currentStep) / instructions.length) * 100, 
     [currentStep, instructions.length]
   );
 
-  const isFirstStep = currentStep === 0;
-  const isLastStep = currentStep === instructions.length - 1;
+  const isFirstStep = currentStep === 1;
+  const isLastStep = currentStep === instructions.length;
 
   return (
     <View style={styles.container}>
@@ -154,11 +117,11 @@ const CookingStepsScreen = React.memo<CookingStepsScreenProps>(({ navigation, ro
           <Ionicons name="close" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {recipeName}
+          {recipeTitle}
         </Text>
         <View style={styles.progressText}>
           <Text style={styles.stepCount}>
-            {currentStep + 1}/{instructions.length}
+            {currentStep}/{instructions.length}
           </Text>
         </View>
       </View>
@@ -239,7 +202,7 @@ const CookingStepsScreen = React.memo<CookingStepsScreenProps>(({ navigation, ro
       </View>
     </View>
   );
-});
+};
 
 CookingStepsScreen.displayName = 'CookingStepsScreen';
 

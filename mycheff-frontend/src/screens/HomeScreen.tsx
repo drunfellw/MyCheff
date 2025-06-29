@@ -21,9 +21,9 @@ import {
   COMPONENT_SPACING, 
   FONT_SIZE, 
   DEFAULTS,
-  SPACING 
+  SPACING,
+  TEXT_STYLES 
 } from '../constants';
-import type { Recipe, Category } from '../types';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -37,37 +37,17 @@ interface HomeScreenProps {
 /**
  * HomeScreen Component
  * 
- * Professional home screen following design system standards
- * Features search, categories, recipe grid, and navigation
+ * ORIJINAL TASARIM - Backend hibrit ile
+ * Kategoriler başlık yok, recipe grid tek liste
  */
 const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('home');
+  const [isLoading, setIsLoading] = useState(false);
+  const [recipes, setRecipes] = useState([]);
 
-  // Fetch featured recipes
-  const { 
-    data: featuredRecipesResponse, 
-    isLoading: isLoadingFeatured,
-    error: featuredError,
-    refetch: refetchFeatured
-  } = useQuery({
-    queryKey: ['featured-recipes'],
-    queryFn: () => recipeAPI.getFeaturedRecipes(1, 10),
-  });
-
-  // Fetch popular recipes
-  const { 
-    data: popularRecipesResponse, 
-    isLoading: isLoadingPopular,
-    error: popularError,
-    refetch: refetchPopular
-  } = useQuery({
-    queryKey: ['popular-recipes'],
-    queryFn: () => recipeAPI.getPopularRecipes(1, 10),
-  });
-
-  // Fetch categories
+  // Backend'den recipes ve kategoriler al
   const { 
     data: categoriesResponse, 
     isLoading: isLoadingCategories,
@@ -78,47 +58,41 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
     queryFn: () => categoryAPI.getCategories(),
   });
 
+  // API call to get recipes
+  const fetchRecipes = async () => {
+    try {
+      setIsLoading(true);
+      const response = await recipeAPI.getFeatured(1, 20);
+      setRecipes(response.data || []);
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+      // Show error message but don't use mock data
+      setRecipes([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Grid layout calculations using design system
   const gridLayout = useMemo(() => {
-    const numColumns = COMPONENT_SPACING.GRID.COLUMNS_PHONE;
+    const numColumns = DEFAULTS.GRID_COLUMNS.PHONE;
     const horizontalPadding = COMPONENT_SPACING.GRID.HORIZONTAL_PADDING * 2;
     const spacing = COMPONENT_SPACING.GRID.SPACING;
     const availableWidth = screenWidth - horizontalPadding - spacing;
-    const cardWidth = availableWidth / numColumns;
+    const cardWidth = (availableWidth - spacing) / numColumns;
     
     return { numColumns, cardWidth, spacing };
   }, []);
 
-  // Transform API data to match component expectations
-  const featuredRecipes = featuredRecipesResponse?.data || [];
-  const popularRecipes = popularRecipesResponse?.data || [];
+  // Backend kategoriler ve recipes
   const categories = categoriesResponse || [];
-
-  // Combine recipes for display (show featured first, then popular)
-  const displayRecipes = useMemo(() => {
-    const featured = featuredRecipes.slice(0, 4);
-    const popular = popularRecipes.slice(0, 6);
-    return [...featured, ...popular];
-  }, [featuredRecipes, popularRecipes]);
-
-  // Transform categories for ScrollMenu
-  const categoryData = useMemo(() => {
-    return categories.map(category => ({
-      id: category.id,
-      name: category.translations?.[0]?.name || category.name || 'Category',
-      icon: category.icon || '🍽️',
-    }));
-  }, [categories]);
-
-  // Loading state
-  const isLoading = isLoadingFeatured || isLoadingPopular || isLoadingCategories;
+  const displayRecipes = recipes;
 
   // Refresh handler
   const onRefresh = useCallback(() => {
-    refetchFeatured();
-    refetchPopular();
     refetchCategories();
-  }, [refetchFeatured, refetchPopular, refetchCategories]);
+    fetchRecipes();
+  }, [refetchCategories, fetchRecipes]);
 
   const handleSearchPress = useCallback((): void => {
     navigation?.navigate('Chat');
@@ -127,26 +101,22 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
   const handleCategorySelect = useCallback((categoryId: string): void => {
     setSelectedCategory(categoryId);
     console.log('Category selected:', categoryId);
-    // In the future, filter recipes by category
   }, []);
 
-  const handleRecipePress = useCallback((recipe: Recipe): void => {
-    navigation?.navigate('RecipeDetail');
+  const handleRecipePress = useCallback((recipe: any): void => {
+    navigation?.navigate('RecipeDetail', { recipeId: recipe.id });
     console.log('Recipe pressed:', recipe.title);
   }, [navigation]);
 
   const handleFavoritePress = useCallback((recipeId: string): void => {
-    // TODO: Implement favorite API call
     console.log('Favorite toggled for recipe:', recipeId);
   }, []);
 
   const handleTabPress = useCallback((tabId: string): void => {
     setActiveTab(tabId);
     
-    // Navigation logic
     switch (tabId) {
       case 'home':
-        // Already on home screen
         break;
       case 'cheff':
         navigation?.navigate('Chat');
@@ -166,7 +136,7 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
   }, [navigation]);
 
   // Error handling
-  if (featuredError || popularError || categoriesError) {
+  if (categoriesError) {
     return (
       <View style={[styles.container, styles.centered]}>
         <Text style={styles.errorText}>Veri yüklenirken hata oluştu</Text>
@@ -190,69 +160,41 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
           <SearchBar onPress={handleSearchPress} />
         </View>
 
-        {/* Categories */}
-        <View style={styles.categoriesContainer}>
-          <Text style={styles.sectionTitle}>Kategoriler</Text>
+        {/* Categories (Başlık yok - orijinal tasarım) */}
+        <View style={styles.categoriesSection}>
           {isLoadingCategories ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            </View>
           ) : (
             <ScrollMenu
-              data={categoryData}
-              selectedId={selectedCategory}
-              onItemPress={handleCategorySelect}
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategorySelect={handleCategorySelect}
             />
           )}
         </View>
 
-        {/* Featured Recipes Section */}
-        {featuredRecipes.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Öne Çıkan Tarifler</Text>
-            <View style={styles.recipesGrid}>
-              {featuredRecipes.slice(0, 4).map((recipe) => (
-                <View key={recipe.id} style={[styles.recipeCard, { width: gridLayout.cardWidth }]}>
-                  <RecipeCard
-                    recipe={recipe}
-                    onPress={() => handleRecipePress(recipe)}
-                    onFavoritePress={() => handleFavoritePress(recipe.id)}
-                  />
-                </View>
-              ))}
-            </View>
+        {/* Recipe Grid (Tek liste - başlık yok) */}
+        <View style={styles.recipesSection}>
+          <View style={styles.recipesGrid}>
+            {displayRecipes.map((recipe, index) => (
+              <View key={recipe.id} style={[styles.recipeCardWrapper, { width: gridLayout.cardWidth }]}>
+                <RecipeCard
+                  recipe={recipe}
+                  onPress={() => handleRecipePress(recipe)}
+                  onFavoritePress={() => handleFavoritePress(recipe.id)}
+                />
+              </View>
+            ))}
           </View>
-        )}
-
-        {/* Popular Recipes Section */}
-        {popularRecipes.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Popüler Tarifler</Text>
-            <View style={styles.recipesGrid}>
-              {popularRecipes.slice(0, 6).map((recipe) => (
-                <View key={recipe.id} style={[styles.recipeCard, { width: gridLayout.cardWidth }]}>
-                  <RecipeCard
-                    recipe={recipe}
-                    onPress={() => handleRecipePress(recipe)}
-                    onFavoritePress={() => handleFavoritePress(recipe.id)}
-                  />
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
+        </View>
 
         {/* Loading state */}
         {isLoading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>Tarifler yükleniyor...</Text>
-          </View>
-        )}
-
-        {/* Empty state */}
-        {!isLoading && displayRecipes.length === 0 && (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Henüz tarif bulunmuyor</Text>
-            <Text style={styles.emptySubtext}>Lütfen daha sonra tekrar deneyin</Text>
+            <Text style={styles.loadingText}>Yükleniyor...</Text>
           </View>
         )}
 
@@ -280,55 +222,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: COMPONENT_SPACING.NAVIGATION.HEIGHT + SPACING.lg,
+    paddingBottom: COMPONENT_SPACING.NAVIGATION.HEIGHT + SPACING.xl,
   },
   searchContainer: {
-    padding: COMPONENT_SPACING.GRID.HORIZONTAL_PADDING,
+    paddingHorizontal: COMPONENT_SPACING.GRID.HORIZONTAL_PADDING,
+    paddingTop: SPACING.md,
   },
-  categoriesContainer: {
-    padding: COMPONENT_SPACING.GRID.HORIZONTAL_PADDING,
+  categoriesSection: {
+    paddingTop: SPACING.lg,
   },
-  sectionTitle: {
-    fontSize: FONT_SIZE.MD,
-    fontWeight: '500',
-    color: COLORS.textPrimary,
-    lineHeight: FONT_SIZE.LG + 2,
-    marginBottom: SPACING.sm,
+  recipesSection: {
+    paddingTop: SPACING.xl,
+    paddingHorizontal: COMPONENT_SPACING.GRID.HORIZONTAL_PADDING,
   },
   recipesGrid: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: COMPONENT_SPACING.GRID.SPACING,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: SPACING.md,
   },
-  recipeCard: {
-    flex: 1,
+  recipeCardWrapper: {
+    marginBottom: SPACING.lg,
   },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    paddingVertical: SPACING.xl,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   loadingText: {
-    fontSize: FONT_SIZE.MD,
-    fontWeight: '500',
-    color: COLORS.textPrimary,
-    marginTop: SPACING.sm,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: FONT_SIZE.MD,
-    fontWeight: '500',
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.sm,
-  },
-  emptySubtext: {
-    fontSize: FONT_SIZE.SM,
+    ...TEXT_STYLES.bodyMedium,
     color: COLORS.textSecondary,
+    marginTop: SPACING.sm,
   },
   bottomSpacing: {
     height: SPACING.xl,
@@ -339,13 +263,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontSize: FONT_SIZE.MD,
-    fontWeight: '500',
+    ...TEXT_STYLES.heading4,
     color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
   },
   errorSubtext: {
-    fontSize: FONT_SIZE.SM,
+    ...TEXT_STYLES.bodyMedium,
     color: COLORS.textSecondary,
   },
 });

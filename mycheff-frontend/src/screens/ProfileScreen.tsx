@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import NavigationBar from '../components/NavigationBar';
 import ScreenHeader from '../components/ScreenHeader';
+import { useAuth } from '../providers/AuthProvider';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
 
 interface ProfileScreenProps {
@@ -49,20 +50,21 @@ interface PaymentMethod {
  */
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('profile');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
 
-  // Mock user data - Backend'den gelecek
-  const [userInfo] = useState<UserInfo>({
-    name: 'İsmail Uzun',
-    email: 'ismail@example.com',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-    isPremium: true,
-    memberSince: 'January 2024',
-    recipesCreated: 12,
-    favoriteCount: 45,
-  });
+  // Use real user data from auth or fallback to mock data
+  const userInfo: UserInfo = {
+    name: user?.fullName || user?.username || 'MyCheff User',
+    email: user?.email || 'user@mycheff.com',
+    avatar: user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    isPremium: user?.isPremium || false,
+    memberSince: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' }) : 'January 2024',
+    recipesCreated: 12, // This would come from backend
+    favoriteCount: 45, // This would come from backend
+  };
 
   // Mock payment methods - Backend'den gelecek
   const [paymentMethods] = useState<PaymentMethod[]>([
@@ -135,23 +137,28 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     }
   }, [navigation]);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      'Çıkış Yap',
+      'Hesabından çıkmak istediğinden emin misin?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'İptal', style: 'cancel' },
         { 
-          text: 'Logout', 
+          text: 'Çıkış Yap', 
           style: 'destructive',
-          onPress: () => {
-            // TODO: Implement logout
-            console.log('User logged out');
+          onPress: async () => {
+            try {
+              await logout();
+              // Navigation will be handled automatically by App.tsx
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Hata', 'Çıkış yapılırken bir hata oluştu');
+            }
           }
         },
       ]
     );
-  }, []);
+  }, [logout]);
 
   const getCardIcon = useCallback((type: PaymentMethod['type']) => {
     switch (type) {

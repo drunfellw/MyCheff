@@ -8,9 +8,17 @@ import {
   BORDER_RADIUS, 
   SHADOW_PRESETS 
 } from '../constants';
-import type { Recipe } from '../types';
 
-const { width: screenWidth } = Dimensions.get('window');
+interface Recipe {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  cookingTimeMinutes?: number;
+  difficultyLevel?: number;
+  isFavorite?: boolean;
+  categories?: { name: string }[];
+}
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -35,13 +43,6 @@ const RecipeCard = React.memo<RecipeCardProps>(({
   isSelected = false, 
   isSelectionMode = false 
 }) => {
-  // Calculate card width using design system
-  const cardWidth = useMemo(() => {
-    const horizontalMargin = COMPONENT_SPACING.GRID.HORIZONTAL_PADDING * 2;
-    const cardGap = COMPONENT_SPACING.GRID.SPACING;
-    return (screenWidth - horizontalMargin - cardGap) / COMPONENT_SPACING.GRID.COLUMNS_PHONE;
-  }, []);
-
   const handlePress = useCallback(() => {
     onPress?.(recipe);
   }, [onPress, recipe]);
@@ -65,11 +66,13 @@ const RecipeCard = React.memo<RecipeCardProps>(({
     return recipe.isFavorite ? COLORS.primary : COLORS.white;
   }, [isSelectionMode, recipe.isFavorite]);
 
+  const imageSource = recipe.imageUrl || DEFAULT_IMAGE;
+  const categoryName = recipe.categories?.[0]?.name || 'Delicious recipe';
+
   return (
     <TouchableOpacity 
       style={[
         styles.container, 
-        { width: cardWidth }, 
         isSelected && styles.selectedContainer
       ]} 
       onPress={handlePress}
@@ -81,7 +84,7 @@ const RecipeCard = React.memo<RecipeCardProps>(({
         isSelected && styles.selectedImageContainer
       ]}>
         <Image
-          source={{ uri: recipe.image || DEFAULT_IMAGE }}
+          source={{ uri: imageSource }}
           style={styles.image}
           resizeMode="cover"
         />
@@ -121,7 +124,7 @@ const RecipeCard = React.memo<RecipeCardProps>(({
 
         {/* Recipe Category */}
         <Text style={styles.subtitle} numberOfLines={1}>
-          {recipe.categories?.[0]?.name || 'Delicious recipe'}
+          {categoryName}
         </Text>
       </View>
     </TouchableOpacity>

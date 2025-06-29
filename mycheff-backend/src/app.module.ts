@@ -50,7 +50,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DATABASE_HOST || 'localhost',
-      port: parseInt(process.env.DATABASE_PORT || '5432'),
+      port: parseInt(process.env.DATABASE_PORT || '5433'),
       username: process.env.DATABASE_USERNAME || 'postgres',
       password: process.env.DATABASE_PASSWORD || '123',
       database: process.env.DATABASE_NAME || 'postgres',

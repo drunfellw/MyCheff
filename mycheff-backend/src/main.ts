@@ -13,9 +13,18 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:19006', 'exp://192.168.1.100:8081'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept-Language'],
+    origin: [
+      'http://localhost:3000',        // Admin panel
+      'http://localhost:19006',       // Expo web
+      'http://localhost:8081',        // Expo development server
+      'exp://localhost:8081',         // Expo protocol
+      /^exp:\/\/.*$/,                 // Any Expo protocol URL
+      /^http:\/\/localhost:\d+$/,     // Any localhost port
+      /^http:\/\/192\.168\.\d+\.\d+:\d+$/, // Local network
+      /^http:\/\/10\.\d+\.\d+\.\d+:\d+$/,  // Local network (different range)
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept-Language', 'Origin', 'X-Requested-With', 'Accept'],
     credentials: true,
   });
 

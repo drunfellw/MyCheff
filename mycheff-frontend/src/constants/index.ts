@@ -20,8 +20,9 @@ const normalize = (size: number): number => {
 export const APP_CONFIG = {
   NAME: 'MyCheff',
   VERSION: '1.0.0',
-  API_BASE_URL: process.env.EXPO_PUBLIC_API_URL || 'https://api.mycheff.com',
-  DEFAULT_LANGUAGE: 'en',
+  API_BASE_URL: process.env.EXPO_PUBLIC_API_URL || 'http://192.168.225.125:3001/api',
+  API_VERSION: 'v1',
+  DEFAULT_LANGUAGE: 'tr',  // Changed to Turkish as default since this is a Turkish recipe app
   PAGINATION_LIMIT: 20,
   IMAGE_QUALITY: 0.8,
   CACHE_DURATION: 1000 * 60 * 60 * 24, // 24 hours
@@ -369,18 +370,34 @@ export const NAVIGATION_TABS: NavigationTab[] = [
   },
 ] as const;
 
-// Category Icons Mapping
+// Category Icons Mapping - SVG iconları ile orijinal tasarım
 export const CATEGORY_ICONS = {
-  'breakfast-icon': 'sunny',
-  'sandwich-icon': 'fast-food',
-  'salad-icon': 'leaf',
-  'steak-icon': 'restaurant',
-  'chicken-icon': 'nutrition',
-  'vegetable-icon': 'flower',
-  'pastas-icon': 'cafe',
-  'main-meals-icon': 'pizza',
-  'desserts-icon': 'ice-cream',
-  'drinks-icon': 'wine',
+  // Backend'den gelen icon names'e mapping
+  'utensils': 'restaurant-outline',
+  'cookie': 'cafe-outline', 
+  'coffee': 'cafe-outline',
+  'leaf': 'leaf-outline',
+  'pizza': 'pizza-outline',
+  'wine': 'wine-outline',
+  'fast-food': 'fast-food-outline',
+  'nutrition': 'nutrition-outline',
+  'flower': 'flower-outline',
+  'ice-cream': 'ice-cream-outline',
+  
+  // Fallback iconları
+  'breakfast-icon': 'sunny-outline',
+  'sandwich-icon': 'fast-food-outline',
+  'salad-icon': 'leaf-outline',
+  'steak-icon': 'restaurant-outline',
+  'chicken-icon': 'nutrition-outline',
+  'vegetable-icon': 'flower-outline',
+  'pastas-icon': 'cafe-outline',
+  'main-meals-icon': 'pizza-outline',
+  'desserts-icon': 'ice-cream-outline',
+  'drinks-icon': 'wine-outline',
+  
+  // Default fallback
+  'default': 'ellipse-outline',
 } as const;
 
 // Storage Keys

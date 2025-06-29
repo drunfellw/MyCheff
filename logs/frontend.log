@@ -1,0 +1,15 @@
+
+> mycheff-frontend@1.0.0 start
+> expo start
+
+env: load .env
+env: export EXPO_PUBLIC_API_URL
+Starting project at /Users/ismailuzun/Desktop/MyCheff/mycheff-frontend
+Starting Metro Bundler
+The following packages should be updated for best compatibility with the installed expo version:
+  expo@53.0.9 - expected version: 53.0.12
+  expo-blur@14.1.4 - expected version: ~14.1.5
+  react-native@0.79.2 - expected version: 0.79.4
+Your project may not work correctly until you install the expected versions of the packages.
+Waiting on http://localhost:8081
+Logs for your project will appear below.

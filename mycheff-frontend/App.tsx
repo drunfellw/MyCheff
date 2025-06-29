@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
@@ -8,6 +8,7 @@ import Toast from 'react-native-toast-message';
 // Providers
 import { QueryProvider } from './src/providers/QueryProvider';
 import { ModalProvider } from './src/providers/ModalProvider';
+import { AuthProvider, useAuth } from './src/providers/AuthProvider';
 
 // Screens
 import HomeScreen from './src/screens/HomeScreen';
@@ -24,9 +25,12 @@ import TermsOfServiceScreen from './src/screens/TermsOfServiceScreen';
 import HelpSupportScreen from './src/screens/HelpSupportScreen';
 import ProfileEditScreen from './src/screens/ProfileEditScreen';
 import AddCardScreen from './src/screens/AddCardScreen';
+import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
+import WelcomeScreen from './src/screens/WelcomeScreen';
 import { COLORS } from './src/constants';
 
-type Screen = 'Home' | 'Search' | 'SearchResults' | 'Favorites' | 'RecipeDetail' | 'Profile' | 'Chat' | 'CookingSteps' | 'PaymentMethods' | 'PrivacyPolicy' | 'TermsOfService' | 'HelpSupport' | 'ProfileEdit' | 'AddCard';
+type Screen = 'Home' | 'Search' | 'SearchResults' | 'Favorites' | 'RecipeDetail' | 'Profile' | 'Chat' | 'CookingSteps' | 'PaymentMethods' | 'PrivacyPolicy' | 'TermsOfService' | 'HelpSupport' | 'ProfileEdit' | 'AddCard' | 'Login' | 'Register' | 'Welcome';
 
 interface NavigationParams {
   [key: string]: any;
@@ -45,8 +49,9 @@ interface Navigation {
  * Features optimized navigation system and performance
  */
 const AppContent = React.memo(() => {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('Home');
-  const [navigationHistory, setNavigationHistory] = useState<Screen[]>(['Home']);
+  const { isAuthenticated, isLoading } = useAuth();
+  const [currentScreen, setCurrentScreen] = useState<Screen>('Welcome');
+  const [navigationHistory, setNavigationHistory] = useState<Screen[]>(['Welcome']);
 
   const navigation: Navigation = useMemo(() => ({
     navigate: (screen: string, params?: NavigationParams) => {
@@ -71,6 +76,20 @@ const AppContent = React.memo(() => {
   const renderScreen = useCallback(() => {
     const screenProps = { navigation };
     
+    // Show authentication screens if not authenticated
+    if (!isAuthenticated) {
+      switch (currentScreen) {
+        case 'Register':
+          return <RegisterScreen {...screenProps} />;
+        case 'Login':
+          return <LoginScreen {...screenProps} />;
+        case 'Welcome':
+        default:
+          return <WelcomeScreen {...screenProps} />;
+      }
+    }
+    
+    // Show main app screens if authenticated
     switch (currentScreen) {
       case 'Home':
         return <HomeScreen {...screenProps} />;
@@ -100,10 +119,21 @@ const AppContent = React.memo(() => {
         return <ProfileEditScreen {...screenProps} />;
       case 'AddCard':
         return <AddCardScreen {...screenProps} />;
+      case 'Welcome':
+        return <WelcomeScreen {...screenProps} />;
       default:
         return <HomeScreen {...screenProps} />;
     }
-  }, [currentScreen, navigation]);
+  }, [currentScreen, navigation, isAuthenticated]);
+
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -120,10 +150,12 @@ const App = () => {
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
         <QueryProvider>
-          <ModalProvider>
-            <AppContent />
-            <Toast />
-          </ModalProvider>
+          <AuthProvider>
+            <ModalProvider>
+              <AppContent />
+              <Toast />
+            </ModalProvider>
+          </AuthProvider>
         </QueryProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -133,6 +165,12 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: COLORS.background,
   },
 });

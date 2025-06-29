@@ -18,6 +18,7 @@ import { NavigationBar } from '../components';
 import ScreenHeader from '../components/ScreenHeader';
 import RecipeCard from '../components/RecipeCard';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
+import { recipesAPI } from '../services/recipesAPI';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -50,96 +51,37 @@ interface SearchScreenProps {
 const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('All');
   const [searchResults, setSearchResults] = useState<Recipe[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [showResults, setShowResults] = useState<boolean>(false);
   
   const searchInputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Mock recipes data - Backend'den gelecek
-  const mockRecipes: Recipe[] = useMemo(() => [
-    { 
-      id: '1', 
-      title: 'Chicken Alfredo Pasta', 
-      category: 'Italian',
-      image: 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=400&h=300&fit=crop',
-      time: '25 min',
-      rating: '4.8',
-      difficulty: 'Medium',
-      ingredients: ['Chicken', 'Pasta', 'Cream', 'Parmesan']
-    },
-    { 
-      id: '2', 
-      title: 'Margherita Pizza', 
-      category: 'Italian',
-      image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=400&h=300&fit=crop',
-      time: '30 min',
-      rating: '4.7',
-      difficulty: 'Medium',
-      ingredients: ['Dough', 'Tomato', 'Mozzarella', 'Basil']
-    },
-    { 
-      id: '3', 
-      title: 'Caesar Salad', 
-      category: 'Salads',
-      image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
-      time: '15 min',
-      rating: '4.5',
-      difficulty: 'Easy',
-      ingredients: ['Lettuce', 'Croutons', 'Parmesan', 'Caesar Dressing']
-    },
-    { 
-      id: '4', 
-      title: 'Beef Stir Fry', 
-      category: 'Asian',
-      image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=300&fit=crop',
-      time: '20 min',
-      rating: '4.6',
-      difficulty: 'Easy',
-      ingredients: ['Beef', 'Vegetables', 'Soy Sauce', 'Rice']
-    },
-    { 
-      id: '5', 
-      title: 'Chocolate Cake', 
-      category: 'Desserts',
-      image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop',
-      time: '60 min',
-      rating: '4.9',
-      difficulty: 'Hard',
-      ingredients: ['Flour', 'Chocolate', 'Eggs', 'Sugar']
-    },
-    { 
-      id: '6', 
-      title: 'Greek Salad', 
-      category: 'Mediterranean',
-      image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&h=300&fit=crop',
-      time: '10 min',
-      rating: '4.4',
-      difficulty: 'Easy',
-      ingredients: ['Tomatoes', 'Cucumber', 'Feta', 'Olives']
-    },
-    { 
-      id: '7', 
-      title: 'Chicken Curry', 
-      category: 'Indian',
-      image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop',
-      time: '40 min',
-      rating: '4.7',
-      difficulty: 'Medium',
-      ingredients: ['Chicken', 'Curry Spices', 'Coconut Milk', 'Rice']
-    },
-    { 
-      id: '8', 
-      title: 'Fish Tacos', 
-      category: 'Mexican',
-      image: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=400&h=300&fit=crop',
-      time: '25 min',
-      rating: '4.6',
-      difficulty: 'Medium',
-      ingredients: ['Fish', 'Tortillas', 'Cabbage', 'Lime']
-    },
-  ], []);
+  // API search function
+  const performSearch = async (query: string, filter: string = 'All') => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setHasSearched(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setHasSearched(true);
+      
+      // Call API search endpoint
+      const response = await recipesAPI.search(query, 1, 20);
+      setSearchResults(response.data || []);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Search functionality - Backend API call point
   const searchRecipes = useCallback(async (query: string) => {
@@ -159,7 +101,7 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
       // Mock search simulation
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      const filtered = mockRecipes.filter(recipe =>
+      const filtered = searchResults.filter(recipe =>
         recipe.title?.toLowerCase().includes(query.toLowerCase())
       );
       
@@ -179,7 +121,7 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [mockRecipes, fadeAnim]);
+  }, [searchResults, fadeAnim]);
 
   // Debounced search
   useEffect(() => {

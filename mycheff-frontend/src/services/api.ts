@@ -90,29 +90,39 @@ export const languageAPI = {
 
 // Recipe API Services
 export const recipeAPI = {
-  // Search recipes with advanced parameters
+  // Search recipes with query parameter (matches backend GET /api/v1/recipes/search?q=query)
   searchRecipes: async (params: RecipeSearchParams & {
     page?: number;
     limit?: number;
   }): Promise<PaginatedResponse<Recipe>> => {
-    const { page = 1, limit = 20, ...searchParams } = params;
+    const { page = 1, limit = 20, query, ...searchParams } = params;
     
-    if (searchParams.query) {
-      const { isValid, sanitized } = validateSearchQuery(searchParams.query);
+    if (query) {
+      const { isValid, sanitized } = validateSearchQuery(query);
       if (!isValid) {
         throw new Error('Invalid search query');
       }
-      searchParams.query = sanitized;
-    }
+      
+      const queryParams = new URLSearchParams({
+        q: sanitized,
+        page: page.toString(),
+        limit: limit.toString(),
+      });
 
-    return api.postPaginated<Recipe>('/recipes/search', {
-      ...searchParams,
-      page,
-      limit,
-    });
+      // Add other search parameters
+      Object.entries(searchParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, value.toString());
+        }
+      });
+
+      return api.getPaginated<Recipe>(`/recipes/search?${queryParams.toString()}`);
+    }
+    
+    return { data: [], pagination: { page, limit, total: 0, totalPages: 0, hasNext: false, hasPrev: false } };
   },
 
-  // Get recipes by ingredient matching
+  // Get recipes by ingredient matching (backend will need this endpoint)
   getRecipesByIngredients: async (
     params: IngredientMatchParams & {
       page?: number;
@@ -131,15 +141,16 @@ export const recipeAPI = {
     );
   },
 
-  // Get popular recipes
+  // Get popular recipes (backend will need this endpoint - for now use regular recipes)
   getPopularRecipes: async (
     page: number = 1,
     limit: number = 20
   ): Promise<PaginatedResponse<Recipe>> => {
-    return api.getPaginated<Recipe>(`/recipes/popular?page=${page}&limit=${limit}`);
+    // For now, use regular recipes endpoint since popular endpoint doesn't exist yet
+    return api.getPaginated<Recipe>(`/recipes?page=${page}&limit=${limit}`);
   },
 
-  // Get featured recipes
+  // Get featured recipes (matches backend GET /api/v1/recipes/featured)
   getFeaturedRecipes: async (
     page: number = 1,
     limit: number = 20
@@ -147,7 +158,7 @@ export const recipeAPI = {
     return api.getPaginated<Recipe>(`/recipes/featured?page=${page}&limit=${limit}`);
   },
 
-  // Get all recipes with filters
+  // Get all recipes with filters (matches backend GET /api/v1/recipes)
   getRecipes: async (
     page: number = 1,
     limit: number = 20,
@@ -173,7 +184,7 @@ export const recipeAPI = {
     return api.getPaginated<Recipe>(`/recipes?${params.toString()}`);
   },
 
-  // Get single recipe by ID
+  // Get single recipe by ID (matches backend GET /api/v1/recipes/:id)
   getRecipeById: async (recipeId: string): Promise<Recipe> => {
     const recipe = await api.get<Recipe>(`/recipes/${recipeId}`);
     
@@ -186,7 +197,7 @@ export const recipeAPI = {
     return recipe;
   },
 
-  // Rate a recipe
+  // Rate a recipe (backend will need this endpoint)
   rateRecipe: async (
     recipeId: string,
     rating: number,
@@ -201,12 +212,14 @@ export const recipeAPI = {
 
 // Category API Services
 export const categoryAPI = {
-  // Get all categories with translations
+  // Get all categories with translations (matches backend GET /api/v1/recipes/categories)
   getCategories: async (): Promise<Category[]> => {
-    return api.get<Category[]>('/categories');
+    // Backend returns { success: true, data: Category[] } format
+    const response = await api.get<Category[]>('/recipes/categories');
+    return response;
   },
 
-  // Get recipes by category
+  // Get recipes by category (backend will need this endpoint)
   getCategoryRecipes: async (
     categoryId: string,
     page: number = 1,
