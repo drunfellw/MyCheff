@@ -21,6 +21,7 @@ import NavigationBar from '../components/NavigationBar';
 import FilterModal from '../components/FilterModal';
 import ScreenHeader from '../components/ScreenHeader';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
+import { recipeAPI, userAPI } from '../services/api';
 import type { Recipe as ImportedRecipe, FilterOptions } from '../types';
 
 interface Recipe {
@@ -67,63 +68,8 @@ const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({ navigation, r
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>('search');
 
-  // Mock search results - Backend'den gelecek
-  const [searchResults, setSearchResults] = useState<Recipe[]>([
-    {
-      id: 'search-1',
-      title: 'Mushroom Risotto',
-      time: '35 min',
-      category: 'Main Course',
-      image: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=300&h=200&fit=crop',
-      rating: '4.8',
-      isFavorite: false,
-    },
-    {
-      id: 'search-2',
-      title: 'Chicken Alfredo',
-      time: '25 min',
-      category: 'Main Course',
-      image: 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=300&h=200&fit=crop',
-      rating: '4.7',
-      isFavorite: true,
-    },
-    {
-      id: 'search-3',
-      title: 'Caesar Salad',
-      time: '10 min',
-      category: 'Salad',
-      image: 'https://images.unsplash.com/photo-1546793665-c74683f339c1?w=300&h=200&fit=crop',
-      rating: '4.6',
-      isFavorite: false,
-    },
-    {
-      id: 'search-4',
-      title: 'Chocolate Cake',
-      time: '60 min',
-      category: 'Dessert',
-      image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=300&h=200&fit=crop',
-      rating: '4.9',
-      isFavorite: false,
-    },
-    {
-      id: 'search-5',
-      title: 'Greek Salad',
-      time: '8 min',
-      category: 'Salad',
-      image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300&h=200&fit=crop',
-      rating: '4.5',
-      isFavorite: true,
-    },
-    {
-      id: 'search-6',
-      title: 'Beef Steak',
-      time: '20 min',
-      category: 'Main Course',
-      image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=300&h=200&fit=crop',
-      rating: '4.8',
-      isFavorite: false,
-    },
-  ]);
+  // Backend search results 
+  const [searchResults, setSearchResults] = useState<Recipe[]>([]);
 
   // Search functionality with debounce
   useEffect(() => {
@@ -139,15 +85,35 @@ const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({ navigation, r
   const performSearch = useCallback(async (query: string) => {
     setIsLoading(true);
     try {
-      // TODO: API call to search recipes
-      // const results = await recipeService.searchRecipes(query, appliedFilters);
-      // setSearchResults(results);
+      console.log('🔍 Searching for:', query, 'with filters:', appliedFilters);
       
-      // Mock search delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      console.log('Searching for:', query);
+      // Call backend search API
+      const searchResponse = await recipeAPI.searchRecipes({
+        query,
+        categories: appliedFilters.categories,
+        difficulty: appliedFilters.difficulty,
+        cookingTime: appliedFilters.cookingTime,
+        dietary: appliedFilters.dietary,
+        page: 1,
+        limit: 20
+      });
+      
+      // Transform backend results to UI format
+      const transformedResults = searchResponse.data?.map(recipe => ({
+        id: recipe.id,
+        title: recipe.title || recipe.name,
+        time: `${recipe.cookingTimeMinutes || recipe.cookingTime || 30} min`,
+        category: recipe.categories?.[0]?.name || recipe.category || 'Main Course',
+        image: recipe.imageUrl || recipe.media?.[0]?.url || 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop',
+        rating: recipe.averageRating?.toString() || recipe.rating?.toString() || '4.5',
+        isFavorite: recipe.isFavorite || false,
+      })) || [];
+      
+      setSearchResults(transformedResults);
+      console.log(`✅ Found ${transformedResults.length} search results`);
     } catch (error) {
       console.error('Search error:', error);
+      setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
@@ -212,7 +178,8 @@ const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({ navigation, r
     navigation?.navigate('RecipeDetail', { recipe });
   }, [navigation]);
 
-  const handleFavoritePress = useCallback((recipeId: string) => {
+  const handleFavoritePress = useCallback(async (recipeId: string) => {
+    // Optimistic update
     setSearchResults(prevResults => 
       prevResults.map(recipe => 
         recipe.id === recipeId 
@@ -220,8 +187,21 @@ const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({ navigation, r
           : recipe
       )
     );
-    // TODO: API call to toggle favorite
-    // await recipeService.toggleFavorite(recipeId);
+    
+    try {
+      // Backend API call to toggle favorite
+      await userAPI.toggleFavoriteRecipe(recipeId);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // Revert on error
+      setSearchResults(prevResults => 
+        prevResults.map(recipe => 
+          recipe.id === recipeId 
+            ? { ...recipe, isFavorite: !recipe.isFavorite }
+            : recipe
+        )
+      );
+    }
   }, []);
 
   // Calculate active filter count

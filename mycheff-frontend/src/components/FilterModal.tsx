@@ -10,11 +10,10 @@ import {
   ScrollView,
   PanResponder,
 } from 'react-native';
-
-
-
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
+import { categoryAPI } from '../services/api';
 import { 
   COLORS, 
   COMPONENT_SPACING, 
@@ -73,24 +72,60 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const scrollViewRef = useRef<ScrollView>(null);
   const [scrollEnabled, setScrollEnabled] = React.useState(true);
 
-  // Mock data - Backend'den gelecek
+  // Backend categories
+  const { data: backendCategories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => categoryAPI.getAllCategories(),
+    staleTime: 10 * 60 * 1000, // 10 dakika cache
+  });
+
+  // Category icon mapping
+  const categoryIconMap: Record<string, string> = {
+    'Breakfast': 'sunny',
+    'Kahvaltı': 'sunny',
+    'Lunch': 'restaurant', 
+    'Öğle Yemeği': 'restaurant',
+    'Dinner': 'moon',
+    'Akşam Yemeği': 'moon',
+    'Snacks': 'fast-food',
+    'Atıştırmalık': 'fast-food',
+    'Desserts': 'ice-cream',
+    'Tatlılar': 'ice-cream',
+    'Beverages': 'wine',
+    'İçecekler': 'wine',
+    'Main Course': 'restaurant',
+    'Ana Yemek': 'restaurant',
+    'Soups': 'cafe',
+    'Çorbalar': 'cafe',
+    'Salads': 'leaf',
+    'Salatalar': 'leaf',
+  };
+
+  // Real backend data with fallback
   const defaultFilters: FilterState = useMemo(() => ({
-    categories: [
-      { id: '1', name: 'Breakfast', icon: 'sunny', isSelected: false },
-      { id: '2', name: 'Lunch', icon: 'restaurant', isSelected: false },
-      { id: '3', name: 'Dinner', icon: 'moon', isSelected: false },
-      { id: '4', name: 'Snacks', icon: 'fast-food', isSelected: false },
-      { id: '5', name: 'Desserts', icon: 'ice-cream', isSelected: false },
-      { id: '6', name: 'Beverages', icon: 'wine', isSelected: false },
+    categories: backendCategories.map(category => ({
+      id: category.id,
+      name: category.name,
+      icon: categoryIconMap[category.name] || 'restaurant',
+      isSelected: false,
+    })),
+    difficulty: [
+      { id: 'easy', label: 'Easy', value: 'easy', isSelected: false },
+      { id: 'medium', label: 'Medium', value: 'medium', isSelected: false },
+      { id: 'hard', label: 'Hard', value: 'hard', isSelected: false },
     ],
-    difficulty: [],
     cookingTime: [
       { id: 'quick', label: 'Under 15 min', value: '0-15', isSelected: false },
       { id: 'medium', label: '15-30 min', value: '15-30', isSelected: false },
       { id: 'long', label: '30+ min', value: '30+', isSelected: false },
     ],
-    dietary: [],
-  }), []);
+    dietary: [
+      { id: 'vegetarian', label: 'Vegetarian', value: 'vegetarian', isSelected: false },
+      { id: 'vegan', label: 'Vegan', value: 'vegan', isSelected: false },
+      { id: 'gluten-free', label: 'Gluten Free', value: 'gluten-free', isSelected: false },
+      { id: 'dairy-free', label: 'Dairy Free', value: 'dairy-free', isSelected: false },
+    ],
+  }), [backendCategories]);
 
   const [filters, setFilters] = React.useState<FilterState>(
     initialFilters || defaultFilters

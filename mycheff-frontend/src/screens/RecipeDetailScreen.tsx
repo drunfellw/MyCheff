@@ -132,7 +132,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
   const recipe: ComponentRecipe | null = React.useMemo(() => {
     if (!recipeResponse) return null;
     
-    // DEBUG: Backend'den gelen key field'ları kontrol et
+    // DEBUG: Check backend response key fields
     console.log('🔍 Instructions found:', !!recipeResponse.instructions);
     console.log('🔍 Nutrition found:', !!recipeResponse.nutrition);
     console.log('🔍 Instructions count:', recipeResponse.instructions?.length || 0);
@@ -218,28 +218,28 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
         calories: recipeResponse.nutrition?.calories || 
                  recipeResponse.details?.nutritionalData?.calories || 
                  recipeResponse.nutritionalData?.calories || 
-                 Math.floor(Math.random() * 200) + 100, // Sample calorie
+                 0, // Backend should provide this
         protein: recipeResponse.nutrition?.protein || 
                 recipeResponse.details?.nutritionalData?.protein || 
                 recipeResponse.nutritionalData?.protein || 
-                Math.floor(Math.random() * 20) + 5,
+                0, // Backend should provide this
         carbs: recipeResponse.nutrition?.carbs || 
               recipeResponse.details?.nutritionalData?.carbohydrates || 
               recipeResponse.nutritionalData?.carbohydrates ||
-              Math.floor(Math.random() * 30) + 10,
+              0, // Backend should provide this
         fat: recipeResponse.nutrition?.fat || 
             recipeResponse.details?.nutritionalData?.fat || 
             recipeResponse.nutritionalData?.fat ||
-            Math.floor(Math.random() * 15) + 5,
+            0, // Backend should provide this
         fiber: recipeResponse.nutrition?.fiber || 
               recipeResponse.details?.nutritionalData?.fiber || 
               recipeResponse.nutritionalData?.fiber ||
-              Math.floor(Math.random() * 8) + 2
+              0 // Backend should provide this
       },
       author: {
-        name: 'MyCheff',
-        avatar: 'https://via.placeholder.com/50x50?text=👨‍🍳',
-        verified: true
+        name: recipeResponse.creator?.fullName || recipeResponse.chef?.name || 'MyCheff',
+        avatar: recipeResponse.creator?.avatar || recipeResponse.chef?.avatar || 'https://via.placeholder.com/50x50?text=👨‍🍳',
+        verified: recipeResponse.creator?.isVerified || recipeResponse.chef?.isVerified || false
       },
       tags: []
     };
@@ -255,11 +255,20 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
   }, [recipe]);
 
   // Toggle favorite - MOVED BEFORE EARLY RETURNS
-  const handleToggleFavorite = useCallback(() => {
+  const handleToggleFavorite = useCallback(async () => {
+    if (!recipe) return;
+    
     setIsFavorite(prev => !prev);
-    // TODO: API call to update favorite status
-    // await recipeService.toggleFavorite(recipe.id);
-  }, []);
+    
+    try {
+      // Call backend to toggle favorite status
+      await userAPI.toggleFavoriteRecipe(recipe.id);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // Revert on error
+      setIsFavorite(prev => !prev);
+    }
+  }, [recipe]);
 
   // Share recipe - MOVED BEFORE EARLY RETURNS
   const handleShare = useCallback(async () => {
@@ -433,6 +442,9 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
     switch (tabId) {
       case 'home':
         navigation?.navigate('Home');
+        break;
+      case 'cheff':
+        navigation?.navigate('Chat');
         break;
       case 'search':
         navigation?.navigate('SearchResults');

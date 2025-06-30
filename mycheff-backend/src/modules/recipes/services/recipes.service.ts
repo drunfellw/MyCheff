@@ -322,6 +322,212 @@ export class RecipesService {
     };
   }
 
+  async findRecipesByIngredients(
+    ingredientIds: string[],
+    minMatchPercentage: number = 30,
+    includePartialMatches: boolean = true,
+    page: number = 1,
+    limit: number = 20,
+    languageCode: string = 'tr'
+  ) {
+    try {
+      console.log('🔍 Finding recipes by ingredients:', { ingredientIds, minMatchPercentage, includePartialMatches });
+
+      // Create a raw SQL query for ingredient matching performance
+      const matchingRecipesQuery = `
+        WITH recipe_ingredient_counts AS (
+          SELECT 
+            r.id as recipe_id,
+            COUNT(DISTINCT ri.ingredient_id) as total_ingredients,
+            COUNT(DISTINCT CASE WHEN ri.ingredient_id = ANY($1) THEN ri.ingredient_id END) as matching_ingredients
+          FROM mycheff.recipes r
+          LEFT JOIN mycheff.recipe_ingredients ri ON r.id = ri.recipe_id
+          WHERE r.is_published = true
+            AND r.is_active = true
+          GROUP BY r.id
+        ),
+        recipe_matches AS (
+          SELECT 
+            recipe_id,
+            total_ingredients,
+            matching_ingredients,
+            CASE 
+              WHEN total_ingredients > 0 THEN 
+                ROUND((matching_ingredients::decimal / total_ingredients) * 100, 2)
+              ELSE 0 
+            END as match_percentage
+          FROM recipe_ingredient_counts
+          WHERE matching_ingredients > 0
+            AND (
+              CASE 
+                WHEN total_ingredients > 0 THEN 
+                  (matching_ingredients::decimal / total_ingredients) * 100
+                ELSE 0 
+              END
+            ) >= $2
+        )
+        SELECT 
+          r.*,
+          rm.match_percentage,
+          rm.matching_ingredients,
+          rm.total_ingredients,
+          (rm.total_ingredients - rm.matching_ingredients) as missing_ingredients_count
+        FROM recipe_matches rm
+        JOIN mycheff.recipes r ON rm.recipe_id = r.id
+        ORDER BY rm.match_percentage DESC, r.average_rating DESC
+        LIMIT $3 OFFSET $4;
+      `;
+
+      const offset = (page - 1) * limit;
+      const matchingRecipes = await this.recipeRepository.query(matchingRecipesQuery, [
+        ingredientIds,
+        minMatchPercentage,
+        limit,
+        offset
+      ]);
+
+      console.log(`📊 Found ${matchingRecipes.length} matching recipes`);
+
+      // Get total count for pagination
+      const countQuery = `
+        WITH recipe_ingredient_counts AS (
+          SELECT 
+            r.id as recipe_id,
+            COUNT(DISTINCT ri.ingredient_id) as total_ingredients,
+            COUNT(DISTINCT CASE WHEN ri.ingredient_id = ANY($1) THEN ri.ingredient_id END) as matching_ingredients
+          FROM mycheff.recipes r
+          LEFT JOIN mycheff.recipe_ingredients ri ON r.id = ri.recipe_id
+          WHERE r.is_published = true
+            AND r.is_active = true
+          GROUP BY r.id
+        )
+        SELECT COUNT(*) as total
+        FROM recipe_ingredient_counts
+        WHERE matching_ingredients > 0
+          AND (
+            CASE 
+              WHEN total_ingredients > 0 THEN 
+                (matching_ingredients::decimal / total_ingredients) * 100
+              ELSE 0 
+            END
+          ) >= $2;
+      `;
+
+      const totalResult = await this.recipeRepository.query(countQuery, [
+        ingredientIds,
+        minMatchPercentage
+      ]);
+      const total = parseInt(totalResult[0]?.total || '0');
+
+      // Format results with additional matching information
+      const formattedRecipes = await Promise.all(
+        matchingRecipes.map(async (recipe) => {
+          // Get recipe translations
+          const translations = await this.recipeTranslationRepository.find({
+            where: { recipeId: recipe.id, languageCode },
+          });
+
+          // Get matching and missing ingredients
+          const matchingIngredientsData = await this.getRecipeIngredientDetails(
+            recipe.id,
+            ingredientIds,
+            languageCode
+          );
+
+          const translation = translations[0];
+
+          return {
+            id: recipe.id,
+            title: translation?.title || 'Tarif Başlığı',
+            description: translation?.description || '',
+            cookingTime: recipe.cooking_time_minutes || 30,
+            cookingTimeMinutes: recipe.cooking_time_minutes || 30,
+            prepTimeMinutes: recipe.prep_time_minutes || 15,
+            difficultyLevel: this.mapDifficultyLevel(recipe.difficulty_level),
+            servingSize: recipe.serving_size || 4,
+            isPremium: recipe.is_premium || false,
+            isFeatured: recipe.is_featured || false,
+            averageRating: parseFloat(recipe.average_rating?.toString() || '4.5'),
+            ratingCount: recipe.rating_count || 25,
+            viewCount: recipe.view_count || 100,
+            imageUrl: recipe.image_url,
+            isFavorite: false,
+            // Matching information
+            matchPercentage: parseFloat(recipe.match_percentage),
+            matchingIngredients: matchingIngredientsData.matching,
+            missingIngredients: matchingIngredientsData.missing,
+            totalIngredients: recipe.total_ingredients,
+            matchingIngredientsCount: recipe.matching_ingredients,
+            createdAt: recipe.created_at,
+            updatedAt: recipe.updated_at,
+          };
+        })
+      );
+
+      return {
+        success: true,
+        data: formattedRecipes,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+        message: `Found ${formattedRecipes.length} recipes matching your ingredients`,
+      };
+    } catch (error) {
+      console.error('❌ Error in findRecipesByIngredients:', error);
+      return {
+        success: false,
+        data: [],
+        pagination: { page, limit, total: 0, totalPages: 0 },
+        message: 'Error finding recipes by ingredients',
+        error: error.message,
+      };
+    }
+  }
+
+  private async getRecipeIngredientDetails(
+    recipeId: string,
+    userIngredientIds: string[],
+    languageCode: string = 'tr'
+  ) {
+    // Get all ingredients for this recipe
+    const recipeIngredients = await this.recipeIngredientRepository
+      .createQueryBuilder('ri')
+      .leftJoinAndSelect('ri.ingredient', 'ingredient')
+      .leftJoinAndSelect('ingredient.translations', 'translation', 'translation.languageCode = :languageCode')
+      .where('ri.recipeId = :recipeId', { recipeId })
+      .setParameter('languageCode', languageCode)
+      .getMany();
+
+    const matching = [];
+    const missing = [];
+
+    for (const recipeIngredient of recipeIngredients) {
+      const ingredient = recipeIngredient.ingredient;
+      const translation = ingredient.translations?.[0];
+      const ingredientName = translation?.name || ingredient.slug || 'Unknown';
+
+      if (userIngredientIds.includes(ingredient.id)) {
+        matching.push(ingredientName);
+      } else {
+        missing.push(ingredientName);
+      }
+    }
+
+    return { matching, missing };
+  }
+
+  private mapDifficultyLevel(level: number): string {
+    switch (level) {
+      case 1: return 'Easy';
+      case 2: return 'Medium';
+      case 3: return 'Hard';
+      default: return 'Easy';
+    }
+  }
+
   async getFeaturedRecipes(page: number = 1, limit: number = 10, languageCode: string = 'tr') {
     try {
       console.log('🔍 Fetching featured recipes with language:', languageCode);

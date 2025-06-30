@@ -127,23 +127,32 @@ export const recipeAPI = {
     return { data: [], pagination: { page, limit, total: 0, totalPages: 0, hasNext: false, hasPrev: false } };
   },
 
-  // Get recipes by ingredient matching (backend will need this endpoint)
+  // Get recipes by ingredient matching (NEW BACKEND ENDPOINT)
   getRecipesByIngredients: async (
     params: IngredientMatchParams & {
       page?: number;
       limit?: number;
     }
-  ): Promise<PaginatedResponse<Recipe & { matchPercentage: number; missingIngredients: string[] }>> => {
+  ): Promise<PaginatedResponse<Recipe & { 
+    matchPercentage: number; 
+    missingIngredients: string[];
+    matchingIngredients: string[];
+    totalIngredients: number;
+    matchingIngredientsCount: number;
+  }>> => {
     const { page = 1, limit = 20, ...matchParams } = params;
 
-    return api.postPaginated<Recipe & { matchPercentage: number; missingIngredients: string[] }>(
-      '/recipes/by-ingredients',
-      {
-        ...matchParams,
-        page,
-        limit,
-      }
-    );
+    return api.post<PaginatedResponse<Recipe & { 
+      matchPercentage: number; 
+      missingIngredients: string[];
+      matchingIngredients: string[];
+      totalIngredients: number;
+      matchingIngredientsCount: number;
+    }>>('/recipes/by-ingredients', {
+      ...matchParams,
+      page,
+      limit,
+    });
   },
 
   // Get popular recipes (backend will need this endpoint - for now use regular recipes)
@@ -269,7 +278,7 @@ export const userAPI = {
 
   // Update user profile
   updateProfile: async (userData: Partial<User>): Promise<User> => {
-    return api.put<User>('/user/profile', userData);
+    return api.patch<User>('/user/profile', userData);
   },
 
   // Get user ingredients

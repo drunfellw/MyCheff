@@ -21,6 +21,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScreenHeader from '../components/ScreenHeader';
 import RecipeCard from '../components/RecipeCard';
 import NavigationBar from '../components/NavigationBar';
+import { ingredientAPI, recipeAPI } from '../services/api';
+import { useQuery } from '@tanstack/react-query';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, FONT_FAMILY, COMPONENT_SPACING, SHADOW_PRESETS } from '../constants';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -34,9 +36,11 @@ const STORAGE_KEYS = {
 interface Ingredient {
   id: string;
   name: string;
-  emoji: string;
-  category: string;
+  emoji?: string;
+  category?: string;
   aliases?: string[];
+  slug?: string;
+  imageUrl?: string;
 }
 
 interface Recipe {
@@ -64,123 +68,7 @@ interface Props {
   };
 }
 
-// Sample ingredients data
-const INGREDIENTS_DATA: Ingredient[] = [
-  { id: '1', name: 'Tomato', emoji: '🍅', category: 'vegetables', aliases: ['tomato', 'domates'] },
-  { id: '2', name: 'Garlic', emoji: '🧄', category: 'vegetables', aliases: ['garlic', 'sarımsak'] },
-  { id: '3', name: 'Onion', emoji: '🧅', category: 'vegetables', aliases: ['onion', 'soğan'] },
-  { id: '4', name: 'Bread', emoji: '🥖', category: 'grains', aliases: ['bread', 'ekmek'] },
-  { id: '5', name: 'Chicken', emoji: '🍗', category: 'proteins', aliases: ['chicken', 'tavuk'] },
-  { id: '6', name: 'Carrot', emoji: '🥕', category: 'vegetables', aliases: ['carrot', 'havuç'] },
-  { id: '7', name: 'Cucumber', emoji: '🥒', category: 'vegetables', aliases: ['cucumber', 'salatalık'] },
-  { id: '8', name: 'Pepper', emoji: '🌶️', category: 'spices', aliases: ['pepper', 'biber'] },
-  { id: '9', name: 'Potato', emoji: '🥔', category: 'vegetables', aliases: ['potato', 'patates'] },
-  { id: '10', name: 'Cheese', emoji: '🧀', category: 'dairy', aliases: ['cheese', 'peynir'] },
-  { id: '11', name: 'Egg', emoji: '🥚', category: 'proteins', aliases: ['egg', 'yumurta'] },
-  { id: '12', name: 'Rice', emoji: '🍚', category: 'grains', aliases: ['rice', 'pirinç'] },
-  { id: '13', name: 'Pasta', emoji: '🍝', category: 'grains', aliases: ['pasta', 'makarna'] },
-  { id: '14', name: 'Bell Pepper', emoji: '🫑', category: 'vegetables', aliases: ['bell pepper', 'dolmalık biber'] },
-  { id: '15', name: 'Mushroom', emoji: '🍄', category: 'vegetables', aliases: ['mushroom', 'mantar'] },
-  { id: '16', name: 'Spinach', emoji: '🥬', category: 'vegetables', aliases: ['spinach', 'ıspanak'] },
-  { id: '17', name: 'Beef', emoji: '🥩', category: 'proteins', aliases: ['beef', 'et'] },
-  { id: '18', name: 'Fish', emoji: '🐟', category: 'proteins', aliases: ['fish', 'balık'] },
-  { id: '19', name: 'Milk', emoji: '��', category: 'dairy', aliases: ['milk', 'süt'] },
-  { id: '20', name: 'Butter', emoji: '🧈', category: 'dairy', aliases: ['butter', 'tereyağı'] },
-];
-
-// Sample recipes data with images
-const SAMPLE_RECIPES: Recipe[] = [
-  {
-    id: '1',
-    title: 'Tomato Pasta',
-    category: 'Italian Cuisine',
-    image: 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=400&h=300&fit=crop',
-    time: '20 min',
-    rating: '4.8',
-    isFavorite: false,
-    name: 'Tomato Pasta',
-    emoji: '🍝',
-    description: 'Classic Italian tomato pasta with fresh herbs',
-    cookingTime: '20 min',
-    difficulty: 'Easy',
-    requiredIngredients: ['Pasta', 'Tomato', 'Garlic', 'Onion'],
-  },
-  {
-    id: '2',
-    title: 'Chicken Rice',
-    category: 'Asian Cuisine',
-    image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=300&fit=crop',
-    time: '45 min',
-    rating: '4.6',
-    isFavorite: false,
-    name: 'Chicken Rice',
-    emoji: '🍚',
-    description: 'Delicious chicken rice with vegetables',
-    cookingTime: '45 min',
-    difficulty: 'Medium',
-    requiredIngredients: ['Rice', 'Chicken', 'Onion', 'Carrot'],
-  },
-  {
-    id: '3',
-    title: 'Mixed Salad',
-    category: 'Healthy Food',
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
-    time: '10 min',
-    rating: '4.4',
-    isFavorite: false,
-    name: 'Mixed Salad',
-    emoji: '🥗',
-    description: 'Fresh and healthy mixed vegetable salad',
-    cookingTime: '10 min',
-    difficulty: 'Easy',
-    requiredIngredients: ['Tomato', 'Cucumber', 'Onion'],
-  },
-  {
-    id: '4',
-    title: 'Scrambled Eggs',
-    category: 'Breakfast',
-    image: 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=300&fit=crop',
-    time: '15 min',
-    rating: '4.7',
-    isFavorite: false,
-    name: 'Scrambled Eggs',
-    emoji: '🍳',
-    description: 'Traditional Turkish breakfast scrambled eggs',
-    cookingTime: '15 min',
-    difficulty: 'Easy',
-    requiredIngredients: ['Egg', 'Tomato', 'Pepper', 'Onion'],
-  },
-  {
-    id: '5',
-    title: 'Mushroom Omelet',
-    category: 'Breakfast',
-    image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=300&fit=crop',
-    time: '12 min',
-    rating: '4.5',
-    isFavorite: false,
-    name: 'Mushroom Omelet',
-    emoji: '🥚',
-    description: 'Protein-rich mushroom omelet with cheese',
-    cookingTime: '12 min',
-    difficulty: 'Easy',
-    requiredIngredients: ['Egg', 'Mushroom', 'Cheese'],
-  },
-  {
-    id: '6',
-    title: 'Beef Steak',
-    category: 'Main Course',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
-    time: '25 min',
-    rating: '4.9',
-    isFavorite: false,
-    name: 'Beef Steak',
-    emoji: '🥩',
-    description: 'Juicy grilled beef steak with herbs',
-    cookingTime: '25 min',
-    difficulty: 'Medium',
-    requiredIngredients: ['Beef', 'Garlic', 'Butter'],
-  },
-];
+// All data will come from backend - no more mock data!
 
 const ChatScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -193,6 +81,22 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('cheff');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Backend'den tüm ingredient'ları çek
+  const { data: allIngredients = [], isLoading: isLoadingIngredients } = useQuery({
+    queryKey: ['ingredients'],
+    queryFn: () => ingredientAPI.getAllIngredients(),
+    staleTime: 5 * 60 * 1000, // 5 dakika cache
+  });
+
+  // Search ingredient'ları
+  const { data: searchedIngredients = [], isFetching: isSearching } = useQuery({
+    queryKey: ['ingredientSearch', searchQuery],
+    queryFn: () => ingredientAPI.searchIngredients(searchQuery, 10),
+    enabled: searchQuery.length >= 2,
+    staleTime: 2 * 60 * 1000, // 2 dakika cache
+  });
 
   // Grid layout calculations using design system
   const gridLayout = useMemo(() => {
@@ -281,32 +185,35 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  // Ingredient search
+  // Backend ingredient search with debouncing
   useEffect(() => {
     const timer = setTimeout(() => {
       if (inputText.length >= 2) {
-        const filtered = INGREDIENTS_DATA.filter(ingredient => {
-          const isAlreadySelected = selectedIngredients.some(selected => selected.id === ingredient.id);
-          if (isAlreadySelected) return false;
-
-          const searchTerm = inputText.toLowerCase();
-          const nameMatch = ingredient.name.toLowerCase().includes(searchTerm);
-          const aliasMatch = ingredient.aliases?.some(alias => 
-            alias.toLowerCase().includes(searchTerm)
-          );
-          
-          return nameMatch || aliasMatch;
-        }).slice(0, 5);
-
-        setSuggestions(filtered);
-        setShowSuggestions(filtered.length > 0);
+        setSearchQuery(inputText);
       } else {
         setShowSuggestions(false);
+        setSuggestions([]);
       }
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [inputText, selectedIngredients]);
+  }, [inputText]);
+
+  // Update suggestions when backend search results change
+  useEffect(() => {
+    if (searchedIngredients && searchedIngredients.length > 0) {
+      // Filter out already selected ingredients
+      const filtered = searchedIngredients.filter(ingredient => 
+        !selectedIngredients.some(selected => selected.id === ingredient.id)
+      );
+      
+      setSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else if (searchQuery.length >= 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [searchedIngredients, selectedIngredients, searchQuery]);
 
   // Select ingredient
   const handleSelectIngredient = (ingredient: Ingredient) => {
@@ -321,32 +228,64 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
     setSelectedIngredients(prev => prev.filter(item => item.id !== id));
   };
 
-  // Get recipe suggestions
-  const getRecipeSuggestions = (ingredients: Ingredient[]): Recipe[] => {
-    const ingredientNames = ingredients.map(ing => ing.name);
-    
-    return SAMPLE_RECIPES
-      .map(recipe => {
-        const matchingIngredients = recipe.requiredIngredients?.filter(req => 
-          ingredientNames.some(ing => ing.toLowerCase() === req.toLowerCase())
-        ) || [];
+  // Get recipe suggestions from backend using ingredient matching
+  const getRecipeSuggestions = async (ingredients: Ingredient[]): Promise<Recipe[]> => {
+    try {
+      const ingredientIds = ingredients.map(ing => ing.id);
+      
+      console.log('🔍 Getting recipe suggestions for ingredients:', ingredientIds);
+      
+      // Use new backend ingredient matching endpoint
+      const matchingResults = await recipeAPI.getRecipesByIngredients({
+        ingredientIds,
+        minMatchPercentage: 25, // Lower threshold for better results
+        includePartialMatches: true,
+        page: 1,
+        limit: 20,
+      });
+      
+      if (matchingResults.data && matchingResults.data.length > 0) {
+        console.log(`✅ Found ${matchingResults.data.length} matching recipes`);
         
-        const missingIngredients = recipe.requiredIngredients?.filter(req => 
-          !ingredientNames.some(ing => ing.toLowerCase() === req.toLowerCase())
-        ) || [];
-        
-        return {
+        // Convert to Recipe format with additional matching info
+        return matchingResults.data.map(recipe => ({
           ...recipe,
-          matchScore: matchingIngredients.length,
-          missingIngredients,
-        };
-      })
-      .filter(recipe => recipe.matchScore > 0)
-      .sort((a, b) => b.matchScore - a.matchScore);
+          time: `${recipe.cookingTime || recipe.cookingTimeMinutes || 30} min`,
+          rating: recipe.averageRating?.toString() || '4.5',
+          category: 'Main Course',
+          image: recipe.imageUrl || 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+          // Include matching information for display
+          matchScore: recipe.matchingIngredientsCount || 0,
+          matchPercentage: recipe.matchPercentage || 0,
+          missingIngredients: recipe.missingIngredients || [],
+          matchingIngredients: recipe.matchingIngredients || [],
+        }));
+      }
+      
+      // Fallback to featured recipes if no matches
+      console.log('📋 No ingredient matches found, falling back to featured recipes');
+      const featuredResults = await recipeAPI.getFeaturedRecipes(1, 10);
+      return featuredResults.data?.map(recipe => ({
+        ...recipe,
+        time: `${recipe.cookingTime || recipe.cookingTimeMinutes || 30} min`,
+        rating: recipe.averageRating?.toString() || '4.5',
+        category: recipe.categories?.[0]?.name || 'Main Course',
+        image: recipe.imageUrl || 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+        matchScore: 0,
+        matchPercentage: 0,
+      })) || [];
+      
+    } catch (error) {
+      console.error('Error fetching recipe suggestions:', error);
+      
+      // Return empty array if all backend requests fail
+      console.log('❌ All backend requests failed, returning empty array');
+      return [];
+    }
   };
 
-  // Get recipes
-  const handleGetRecipes = () => {
+  // Get recipes from backend
+  const handleGetRecipes = async () => {
     if (selectedIngredients.length === 0) {
       Alert.alert('Warning', 'Please select at least one ingredient.');
       return;
@@ -356,11 +295,16 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
     Keyboard.dismiss();
     setIsLoading(true);
     
-    setTimeout(() => {
-      const suggestedRecipes = getRecipeSuggestions(selectedIngredients);
+    try {
+      const suggestedRecipes = await getRecipeSuggestions(selectedIngredients);
       setRecipes(suggestedRecipes);
+    } catch (error) {
+      console.error('Error getting recipe suggestions:', error);
+      Alert.alert('Error', 'Failed to get recipe suggestions. Please try again.');
+      setRecipes([]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   // Handle recipe press

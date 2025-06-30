@@ -9,6 +9,7 @@ import Toast from 'react-native-toast-message';
 import { QueryProvider } from './src/providers/QueryProvider';
 import { ModalProvider } from './src/providers/ModalProvider';
 import { AuthProvider, useAuth } from './src/providers/AuthProvider';
+import { I18nProvider } from './src/providers/I18nProvider';
 
 // Screens
 import HomeScreen from './src/screens/HomeScreen';
@@ -155,14 +156,16 @@ const App = () => {
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
-        <QueryProvider>
-          <AuthProvider>
-            <ModalProvider>
-              <AppContent />
-              <Toast />
-            </ModalProvider>
-          </AuthProvider>
-        </QueryProvider>
+        <I18nProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <ModalProvider>
+                <AppContent />
+                <Toast />
+              </ModalProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </I18nProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

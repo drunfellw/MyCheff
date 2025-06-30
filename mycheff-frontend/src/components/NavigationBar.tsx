@@ -15,6 +15,7 @@ import {
   getHitSlop, 
   getMinTouchTarget 
 } from '../utils/responsiveDesign';
+import { useI18n } from '../providers/I18nProvider';
 
 interface NavigationBarProps {
   activeTab?: string;
@@ -37,6 +38,7 @@ const NavigationBar = React.memo<NavigationBarProps>(({
 }) => {
   const insets = useSafeAreaInsets();
   const { navigationBar, isSmallDevice } = useResponsiveDimensions();
+  const { t } = useI18n();
   
   const renderTab = useCallback((tab: typeof NAVIGATION_TABS[0], index: number) => {
     const isActive = tab.id === activeTab;
@@ -89,7 +91,7 @@ const NavigationBar = React.memo<NavigationBarProps>(({
           adjustsFontSizeToFit={isSmallDevice}
           minimumFontScale={0.8}
         >
-          {tab.label}
+          {t(`navigation.${tab.id}`)}
         </Text>
       </TouchableOpacity>
     );

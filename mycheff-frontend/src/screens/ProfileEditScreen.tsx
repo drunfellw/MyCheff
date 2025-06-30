@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import ScreenHeader from '../components/ScreenHeader';
+import { useAuth } from '../providers/AuthProvider';
+import { userAPI } from '../services/api';
 import { 
   COLORS, 
   SPACING, 
@@ -47,20 +49,42 @@ interface UserProfile {
 
 const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { user, updateUser } = useAuth();
+  
   const [profile, setProfile] = useState<UserProfile>({
-    name: 'İsmail Uzun',
-    email: 'ismail@example.com',
-    phone: '+90 555 123 4567',
-    bio: 'Food enthusiast and home chef. Love experimenting with new recipes and sharing culinary adventures.',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-    location: 'Istanbul, Turkey',
-    website: 'www.ismailuzun.com',
-    birthDate: '1990-05-15',
+    name: '',
+    email: '',
+    phone: '',
+    bio: '',
+    avatar: '',
+    location: '',
+    website: '',
+    birthDate: '',
     isPrivate: false,
     allowNotifications: true,
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  // Initialize profile data from AuthProvider
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        name: user.fullName || user.username || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        bio: user.bio || '',
+        avatar: user.avatarUrl || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+        location: user.location || '',
+        website: user.website || '',
+        birthDate: user.birthDate || '',
+        isPrivate: user.isPrivate || false,
+        allowNotifications: user.allowNotifications !== false, // Default to true
+      });
+    }
+    setIsInitializing(false);
+  }, [user]);
 
   const handleSave = useCallback(async () => {
     if (!profile.name.trim() || !profile.email.trim()) {
@@ -70,11 +94,30 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Prepare user data for backend
+      const updateData = {
+        username: profile.name.replace(/\s+/g, '').toLowerCase(), // Create username from name
+        fullName: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+        bio: profile.bio,
+        avatarUrl: profile.avatar,
+        location: profile.location,
+        website: profile.website,
+        birthDate: profile.birthDate,
+        isPrivate: profile.isPrivate,
+        allowNotifications: profile.allowNotifications,
+      };
+
+      // Update profile via backend API
+      const updatedUser = await userAPI.updateProfile(updateData);
+      
+      // Update AuthProvider's user data
+      updateUser(updatedUser);
+      
       Alert.alert(
-        'Success',
+        'Success', 
         'Your profile has been updated successfully!',
         [
           {
@@ -83,8 +126,16 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
           }
         ]
       );
-    }, 1500);
-  }, [profile, navigation]);
+    } catch (error) {
+      console.error('Profile update error:', error);
+      Alert.alert(
+        'Error',
+        'Failed to update your profile. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [profile, navigation, updateUser]);
 
   const handleAvatarChange = useCallback(() => {
     Alert.alert(

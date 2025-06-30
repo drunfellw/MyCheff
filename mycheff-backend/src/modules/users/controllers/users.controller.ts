@@ -25,7 +25,7 @@ import { UsersService } from '../services/users.service';
 import { UpdateUserDto, ChangePasswordDto, UserResponseDto } from '../dto/user.dto';
 import { ApiResponseDto, PaginatedResponseDto } from '../../../common/dto/api-response.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
-import { PaginationDto } from '../../../common/dto/pagination.dto';
+// PaginationDto is now part of api-response.dto
 
 @ApiTags('users')
 @Controller('user')
@@ -158,7 +158,7 @@ export class UsersController {
     @Query('limit') limit: number = 20,
     @Query('lang') languageCode?: string,
   ): Promise<PaginatedResponseDto<any>> {
-    return this.usersService.getFavorites(req.user.id, page, limit, languageCode);
+    return this.usersService.getUserFavorites(req.user.id, { page, limit, languageCode });
   }
 
   @Post('favorites')
@@ -206,9 +206,11 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'User favorites retrieved successfully.' })
   async getUserFavorites(
     @Request() req: any,
-    @Query() paginationDto: PaginationDto
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+    @Query('lang') languageCode?: string
   ) {
-    return this.usersService.getUserFavorites(req.user.id, paginationDto);
+    return this.usersService.getUserFavorites(req.user.id, { page, limit, languageCode });
   }
 
   @Post('me/favorites/:recipeId')

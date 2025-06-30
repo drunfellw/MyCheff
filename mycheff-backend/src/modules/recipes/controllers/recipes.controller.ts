@@ -78,6 +78,73 @@ export class RecipesController {
     }
   }
 
+  @Post('by-ingredients')
+  @ApiOperation({ summary: 'Find recipes by ingredients' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Recipes matching ingredients retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        data: { 
+          type: 'array', 
+          items: { 
+            allOf: [
+              { $ref: '#/components/schemas/Recipe' },
+              {
+                type: 'object',
+                properties: {
+                  matchPercentage: { type: 'number' },
+                  missingIngredients: { type: 'array', items: { type: 'string' } },
+                  matchingIngredients: { type: 'array', items: { type: 'string' } }
+                }
+              }
+            ]
+          }
+        },
+        message: { type: 'string' },
+        pagination: { $ref: '#/components/schemas/Pagination' }
+      }
+    }
+  })
+  async findRecipesByIngredients(
+    @Body() matchParams: {
+      ingredientIds: string[];
+      minMatchPercentage?: number;
+      includePartialMatches?: boolean;
+      page?: number;
+      limit?: number;
+      languageCode?: string;
+    }
+  ) {
+    const {
+      ingredientIds,
+      minMatchPercentage = 30,
+      includePartialMatches = true,
+      page = 1,
+      limit = 20,
+      languageCode = 'tr'
+    } = matchParams;
+
+    if (!ingredientIds || ingredientIds.length === 0) {
+      return {
+        success: false,
+        message: 'At least one ingredient ID is required',
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    return await this.recipesService.findRecipesByIngredients(
+      ingredientIds,
+      minMatchPercentage,
+      includePartialMatches,
+      page,
+      limit,
+      languageCode
+    );
+  }
+
   @Get('search')
   @ApiOperation({ summary: 'Search recipes' })
   @ApiResponse({ status: 200, description: 'Search results retrieved successfully' })

@@ -55,34 +55,19 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
 
-  // Use real user data from auth or fallback to mock data
+  // Real user data from backend
   const userInfo: UserInfo = {
     name: user?.fullName || user?.username || 'MyCheff User',
     email: user?.email || 'user@mycheff.com',
     avatar: user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
     isPremium: user?.isPremium || false,
     memberSince: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' }) : 'January 2024',
-    recipesCreated: 12, // This would come from backend
-    favoriteCount: 45, // This would come from backend
+    recipesCreated: user?.recipesCreated || user?.recipeStats?.created || 0, // From backend
+    favoriteCount: user?.favoriteCount || user?.recipeStats?.favorited || 0, // From backend
   };
 
-  // Mock payment methods - Backend'den gelecek
-  const [paymentMethods] = useState<PaymentMethod[]>([
-    {
-      id: '1',
-      type: 'visa',
-      lastFour: '4532',
-      expiryDate: '12/26',
-      isDefault: true,
-    },
-    {
-      id: '2',
-      type: 'mastercard',
-      lastFour: '8901',
-      expiryDate: '08/25',
-      isDefault: false,
-    },
-  ]);
+  // Real payment methods from backend - Empty for now
+  const [paymentMethods] = useState<PaymentMethod[]>([]);
 
   const handleTabPress = useCallback((tabId: string) => {
     setActiveTab(tabId);
@@ -108,17 +93,17 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   }, [navigation]);
 
   const handleUpgradeToPremium = useCallback(() => {
-    // TODO: Navigate to premium upgrade screen
-    Alert.alert('Upgrade to Premium', 'Premium upgrade functionality coming soon!');
-  }, []);
+    // Navigate to subscription/premium screen when implemented
+    navigation?.navigate('Subscription');
+  }, [navigation]);
 
   const handleAddPaymentMethod = useCallback(() => {
     navigation?.navigate('PaymentMethods');
   }, [navigation]);
 
   const handleSocialLogin = useCallback((provider: 'google' | 'facebook' | 'apple') => {
-    // TODO: Implement social login
-    Alert.alert('Social Login', `${provider} login functionality coming soon!`);
+    // Social login will be implemented based on requirements
+    Alert.alert('Social Login', `${provider} login functionality will be available soon!`);
   }, []);
 
   const handleLegalDocument = useCallback((document: string) => {
