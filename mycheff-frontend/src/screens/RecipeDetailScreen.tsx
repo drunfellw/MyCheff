@@ -106,11 +106,25 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
   // Get recipe ID from route params
   const recipeId = route?.params?.recipeId || route?.params?.recipe?.id;
 
+  // Debug logs
+  console.log('🔍 RecipeDetailScreen Debug:');
+  console.log('- route.params:', route?.params);
+  console.log('- recipeId:', recipeId);
+
   // Fetch recipe data from backend
   const { data: recipeResponse, isLoading, error } = useQuery({
     queryKey: ['recipe', recipeId],
-    queryFn: () => recipeAPI.getRecipeById(recipeId!),
+    queryFn: () => {
+      console.log('📡 API Call: recipeAPI.getRecipeById with ID:', recipeId);
+      return recipeAPI.getRecipeById(recipeId!);
+    },
     enabled: !!recipeId,
+    onError: (err) => {
+      console.error('❌ Recipe fetch error:', err);
+    },
+    onSuccess: (data) => {
+      console.log('✅ Recipe fetch success:', data?.title || 'No title');
+    }
   });
 
   // Extract recipe from API response

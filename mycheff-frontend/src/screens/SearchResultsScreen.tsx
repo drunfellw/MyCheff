@@ -10,6 +10,8 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -278,68 +280,85 @@ const SearchResultsScreen: React.FC<SearchResultsScreenProps> = ({ navigation, r
   ), []);
 
   return (
-    <View style={styles.container}>
-      {/* Header with Search */}
-      <ScreenHeader
-        title=""
-        onBackPress={() => navigation?.goBack()}
-        showBackButton={true}
-        backgroundColor={COLORS.background}
-        rightElement={
-          <TouchableOpacity onPress={handleFilterPress}>
-            <Ionicons name="options-outline" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-        }
-      />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+          {/* Header with Search */}
+          <View style={styles.header}>
+            <View style={styles.searchContainer}>
+              <View style={styles.searchWrapper}>
+                <Ionicons 
+                  name="search" 
+                  size={20} 
+                  color={COLORS.textSecondary}
+                  style={styles.searchIcon}
+                />
+                <TextInput
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Search recipes..."
+                  placeholderTextColor={COLORS.textSecondary}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  blurOnSubmit={false}
+                  returnKeyType="search"
+                  textContentType="none"
+                  autoComplete="off"
+                  enablesReturnKeyAutomatically={true}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.clearButton}
+                    onPress={() => setSearchQuery('')}
+                  >
+                    <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              
+              <TouchableOpacity
+                style={styles.filterButton}
+                onPress={handleFilterPress}
+              >
+                <Ionicons name="options" size={20} color={COLORS.white} />
+              </TouchableOpacity>
+            </View>
+          </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color={COLORS.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search recipes..."
-            placeholderTextColor={COLORS.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoFocus={!route?.params?.initialQuery}
+          {/* Results */}
+          <FlatList
+            data={searchResults}
+            renderItem={renderRecipeItem}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            contentContainerStyle={styles.resultsContainer}
+            showsVerticalScrollIndicator={false}
+            onEndReachedThreshold={0.1}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            windowSize={10}
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
-            </TouchableOpacity>
-          )}
+
+          {/* Navigation Bar */}
+          <NavigationBar
+            activeTab={activeTab}
+            onTabPress={handleTabPress}
+          />
+
+          {/* Filter Modal */}
+          <FilterModal
+            visible={isFilterModalVisible}
+            onClose={() => setIsFilterModalVisible(false)}
+            onApply={handleFilterApply}
+            initialFilters={convertOptionsToFilterState(appliedFilters)}
+          />
         </View>
-      </View>
-
-      {/* Results */}
-      <FlatList
-        data={searchResults}
-        renderItem={renderRecipeItem}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        contentContainerStyle={styles.resultsContainer}
-        showsVerticalScrollIndicator={false}
-        onEndReachedThreshold={0.1}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-      />
-
-      {/* Navigation Bar */}
-      <NavigationBar
-        activeTab={activeTab}
-        onTabPress={handleTabPress}
-      />
-
-      {/* Filter Modal */}
-      <FilterModal
-        visible={isFilterModalVisible}
-        onClose={() => setIsFilterModalVisible(false)}
-        onApply={handleFilterApply}
-        initialFilters={convertOptionsToFilterState(appliedFilters)}
-      />
-    </View>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -371,7 +390,7 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginRight: SPACING.sm,
   },
-  searchBar: {
+  searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
@@ -462,6 +481,9 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  clearButton: {
+    padding: SPACING.sm,
   },
 });
 

@@ -10,5 +10,208 @@
 
  ✓ Starting...
  ⚠ The "experimental.esmExternals" option has been modified. experimental.esmExternals is not recommended to be modified as it may disrupt module resolution. It should be removed from your next.config.js.
- ✓ Ready in 1178ms
-[?25h
+ ✓ Ready in 883ms
+ ○ Compiling / ...
+ ⚠ ./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+
+./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+ GET / 200 in 3228ms
+ GET / 200 in 28ms
+ ⚠ ./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+
+./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+ ⚠ ./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+
+./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+ GET /favicon.ico 200 in 228ms
+ ⚠ ./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+
+./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+ ⚠ ./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+ GET /categories/ 200 in 897ms
+ GET / 200 in 185ms
+ ⚠ ./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+ ⚠ ./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/categories/page.tsx
+Attempted import error: 'apiService' is not exported from '../../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/categories/page.tsx
+
+./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+
+./src/app/page.tsx
+Attempted import error: 'apiService' is not exported from '../services/api' (imported as 'apiService').
+
+Import trace for requested module:
+./src/app/page.tsx
+ GET /favicon.ico 200 in 236ms

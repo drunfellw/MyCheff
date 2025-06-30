@@ -5,6 +5,34 @@ alwaysApply: true
 ---
 # MyCheff Project Guidelines for Cursor AI
 
+## ⚠️ CRITICAL: NEVER CHANGE DATABASE CONFIGURATION! ⚠️
+
+**🚨 ABSOLUTE RULES - NEVER VIOLATE:**
+1. **PostgreSQL is ALWAYS on localhost:5432** - NEVER change this
+2. **Username: postgres, Password: 123** - CONFIRMED WORKING PASSWORD
+3. **Database: postgres, Schema: mycheff** - NEVER alter
+4. **NEVER touch docker-compose.yml database ports**
+5. **NEVER suggest changing connection strings**
+6. **NEVER restart/stop/start PostgreSQL services**
+7. **If backend has DB errors - USE start-backend.sh script**
+
+**🎯 REMEMBER:** Database is working with password "123". Backend has start-backend.sh script that sets correct environment variables.
+
+**🔧 KALICI ÇÖZÜMLER:**
+- Database schema oluşturuldu (28 tablo)
+- Sample data yüklendi (languages, categories, recipes)
+- Backend app.module.ts'te default password "123" ayarlandı
+- start-backend.sh script'i oluşturuldu
+- database_fix.py script'i ile setup tamamlandı
+
+**▶️ Backend başlatma:**
+```bash
+cd mycheff-backend
+./start-backend.sh
+```
+
+---
+
 ## 🍳 Project Overview
 MyCheff is a comprehensive food and recipe application with:
 - **Mobile App**: React Native + Expo (iOS/Android)
@@ -401,3 +429,307 @@ chef@mycheff.com / chef123 (Chef role)
 6. **Responsive**: Ensure UI works on different screen sizes
 
 Feel free to adapt these guidelines based on project needs and requirements. These are suggestions to maintain consistency while allowing flexibility for innovation and improvement.
+
+## 🚀 APPLICATION STARTUP & TROUBLESHOOTING GUIDE
+
+### 🗄️ DATABASE READY & CONFIGURED
+
+**⚠️ CRITICAL: Database schema is already set up - DO NOT recreate!**
+
+#### Database Schema Status:
+- ✅ **Complete schema available**: `database/setup_complete_schema.sql` (645 lines)
+- ✅ **Auto-initialization**: `database/init.sql` creates mycheff schema
+- ✅ **Sample data included**: Languages, Units, Subscription Plans with translations
+- ✅ **Backend seeds ready**: Test users, categories, recipes, ingredients
+
+#### Key Database Files:
+```
+database/
+├── init.sql                    # Auto-creates mycheff schema
+└── setup_complete_schema.sql   # Complete tables, indexes, triggers, sample data
+
+mycheff-backend/src/database/seeds/ 
+├── users.seed.ts              # Test user accounts
+├── categories.seed.ts         # Recipe categories
+├── recipes.seed.ts            # Sample recipes (450 lines)
+├── languages.seed.ts          # Multi-language support
+└── subscription-plans.seed.ts # Premium plans
+```
+
+#### Schema Features:
+- **Multi-language support**: Translation tables for all content
+- **Performance optimized**: GIN indexes, triggers, views
+- **Premium features**: Subscription system included
+- **Search ready**: Full-text search with trgm extension
+- **Auto-updates**: Triggers for updated_at columns
+
+#### Available Test Data:
+```sql
+-- Test Users (already seeded)
+admin@mycheff.com / admin123 (Admin role)
+test@mycheff.com / test123 (User role)  
+chef@mycheff.com / chef123 (Chef role)
+
+-- Languages: TR, EN, ES, FR, DE, AR
+-- Units: Complete metric system + Turkish units
+-- Subscription Plans: Free, Monthly Premium, Yearly Premium
+-- Sample: 20+ recipes, 50+ ingredients, categories
+```
+
+#### Database Connection (Current):
+- **Host**: localhost
+- **Port**: 5433 (Docker PostgreSQL)
+- **Database**: postgres
+- **Schema**: mycheff
+- **User**: postgres
+- **Password**: 123
+
+### 🚀 UPDATED STARTUP SEQUENCE
+
+#### 1. **PRE-STARTUP DIAGNOSTICS** 🔍
+Before starting any service, run these checks:
+
+```bash
+# Check what's currently running
+echo "🔍 Current system state:"
+echo "1. PostgreSQL (port 5432):" && lsof -i :5432 || echo "   ❌ PostgreSQL not running"
+echo "2. Backend API (port 3001):" && lsof -i :3001 || echo "   ❌ Backend not running"  
+echo "3. Admin Panel (port 3000):" && lsof -i :3000 || echo "   ❌ Admin panel not running"
+echo "4. Frontend Expo (port 8081/8083):" && lsof -i :8081 -i :8083 || echo "   ❌ Frontend not running"
+echo "5. Docker containers:" && docker ps
+```
+
+#### 2. **CLEAN SHUTDOWN FIRST** 🛑
+Always clean shutdown before starting:
+
+```bash
+# Kill all related processes
+echo "🛑 Cleaning up existing processes..."
+pkill -f "node.*nest\|node.*next\|expo\|react-native" 2>/dev/null || echo "✅ No processes to kill"
+
+# Stop Docker containers
+docker stop $(docker ps -q) 2>/dev/null || echo "✅ No containers to stop"
+```
+
+#### 3. **DATABASE STARTUP** 🗄️
+**⚠️ CRITICAL: PostgreSQL must run on port 5432 with password "password"**
+
+```bash
+# Method A: Use existing PostgreSQL (RECOMMENDED)
+# Check if PostgreSQL is already running
+if lsof -i :5432 >/dev/null 2>&1; then
+    echo "✅ PostgreSQL already running on port 5432"
+else
+    echo "🚀 Starting local PostgreSQL..."
+    brew services start postgresql
+fi
+
+# Method B: Docker PostgreSQL (if local doesn't work)
+# cd mycheff-backend && docker-compose down --volumes --remove-orphans && docker-compose up -d postgres
+
+# VERIFY DATABASE IS READY
+sleep 3
+psql -h localhost -U postgres -d postgres -c "SELECT current_database();" && echo "✅ PostgreSQL ready"
+```
+
+#### 4. **BACKEND STARTUP** 🔧
+**⚠️ CRITICAL: Always navigate to mycheff-backend directory first**
+
+```bash
+# Navigate to backend directory (MUST BE FIRST)
+cd /Users/ismailuzun/Desktop/MyCheff/mycheff-backend
+
+# Kill any existing backend processes
+pkill -f "nest" 2>/dev/null || echo "No backend to kill"
+
+# Install dependencies if needed
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installing backend dependencies..."
+    npm install
+fi
+
+# Start backend
+echo "🚀 Starting backend API..."
+npm run start:dev &
+
+# Wait and verify
+sleep 15
+curl -s http://localhost:3001/health | grep '"status":"ok"' && echo "✅ Backend API working" || echo "❌ Backend failed"
+```
+
+#### 5. **ADMIN PANEL STARTUP** 🖥️
+**⚠️ CRITICAL: Navigate to admin-panel directory**
+
+```bash
+# Navigate to admin panel directory
+cd /Users/ismailuzun/Desktop/MyCheff/admin-panel
+
+# Install dependencies if needed
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installing admin panel dependencies..."
+    npm install
+fi
+
+# Start admin panel
+echo "🚀 Starting admin panel..."
+npm run dev &
+
+# Verify
+sleep 10
+curl -s http://localhost:3000 | head -1 && echo "✅ Admin panel running"
+```
+
+#### 6. **FRONTEND STARTUP** 📱
+**⚠️ CRITICAL: Navigate to mycheff-frontend directory**
+
+```bash
+# Navigate to frontend directory
+cd /Users/ismailuzun/Desktop/MyCheff/mycheff-frontend
+
+# Install dependencies if needed
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installing frontend dependencies..."
+    npm install
+fi
+
+# Start with clear cache
+echo "🚀 Starting frontend..."
+npx expo start --clear &
+
+echo "✅ Startup sequence complete!"
+```
+
+### 🆘 UPDATED COMMON PROBLEMS & SOLUTIONS
+
+#### Problem: "EADDRINUSE: address already in use :::3001"
+**Solution: Kill existing backend process**
+```bash
+# Find and kill backend process
+pkill -f "nest" && echo "Backend killed" || echo "No backend running"
+# OR manual kill:
+lsof -ti:3001 | xargs kill -9 2>/dev/null
+```
+
+#### Problem: "npm: package.json not found in MyCheff directory"
+**Solution: ALWAYS navigate to correct subdirectory first**
+```bash
+# For backend:
+cd /Users/ismailuzun/Desktop/MyCheff/mycheff-backend && npm run start:dev
+
+# For admin:
+cd /Users/ismailuzun/Desktop/MyCheff/admin-panel && npm run dev
+
+# For frontend:
+cd /Users/ismailuzun/Desktop/MyCheff/mycheff-frontend && npx expo start
+```
+
+#### Problem: Database connection failed
+**Solution: Use correct password and port**
+```bash
+# Check PostgreSQL status
+brew services list | grep postgres
+
+# If not running, start it
+brew services start postgresql
+
+# Test connection with correct password
+psql -h localhost -U postgres -d postgres -c "SELECT version();"
+```
+
+#### Problem: Docker PostgreSQL conflicts
+**Solution: Use local PostgreSQL instead**
+```bash
+# Stop any Docker PostgreSQL
+docker stop $(docker ps -q) 2>/dev/null
+
+# Use local PostgreSQL
+brew services start postgresql
+
+# Update backend config to use port 5432 (already done)
+```
+
+### 📋 UPDATED STARTUP VERIFICATION CHECKLIST
+
+After running startup sequence, verify all services:
+
+```bash
+echo "🧪 FINAL VERIFICATION:"
+echo "1. Database:" && psql -h localhost -U postgres -d postgres -c "SELECT current_database();" | head -3
+echo "2. Backend API:" && curl -s http://localhost:3001/health | grep '"status":"ok"' && echo " ✅ Working"
+echo "3. Admin Panel:" && curl -s http://localhost:3000 | head -1 && echo " ✅ Running"
+echo "4. Frontend Expo:" && curl -s http://localhost:8081/ | grep '"name":"mycheff-frontend"' && echo " ✅ Ready"
+```
+
+### 🔑 CONFIRMED TEST CREDENTIALS
+```
+Normal User: test@mycheff.com / test123
+Admin User:  admin@mycheff.com / admin123
+Chef User:   chef@mycheff.com / chef123
+```
+
+### 🚨 CRITICAL DATABASE NOTES
+
+**CONFIRMED WORKING CONFIGURATION:**
+- ✅ Database: PostgreSQL local (port 5432)
+- ✅ Username: postgres
+- ✅ Password: 123
+- ✅ Database: postgres
+- ✅ Schema: mycheff (auto-created)
+
+**DO NOT:**
+- ❌ Use Docker PostgreSQL (causes port conflicts)
+- ❌ Change from port 5432
+- ❌ Use password "123"
+- ❌ Run npm commands from wrong directories
+
+**DO:**
+- ✅ Use local PostgreSQL on port 5432
+- ✅ Use password "123" 
+- ✅ Always navigate to correct subdirectories
+- ✅ Kill existing processes before starting new ones
+
+### 🎯 ONE-COMMAND STARTUP (EMERGENCY)
+
+If everything fails, use this complete reset:
+
+```bash
+# Complete application startup script
+cd /Users/ismailuzun/Desktop/MyCheff && \
+pkill -f "node.*nest\|node.*next\|expo" 2>/dev/null && \
+docker stop $(docker ps -q) 2>/dev/null && \
+brew services start postgresql && \
+sleep 5 && \
+cd mycheff-backend && npm run start:dev & \
+sleep 10 && \
+cd ../admin-panel && npm run dev & \
+sleep 5 && \
+cd ../mycheff-frontend && npx expo start --clear & \
+sleep 15 && \
+echo "🎉 All services started!"
+```
+
+---
+
+**🎯 REMEMBER:** 
+1. PostgreSQL local (port 5432, password "123")
+2. Always navigate to correct subdirectories before npm commands
+3. Kill existing processes before starting new ones
+4. Use the one-command startup for quick recovery
+
+## 🔧 MAINTENANCE COMMANDS
+
+Regular maintenance to prevent issues:
+```bash
+# Weekly cleanup
+docker system prune -f
+npm cache clean --force
+npx expo install --fix
+
+# Monthly updates
+npm update
+npx expo doctor
+```
+
+---
+
+**🎯 REMEMBER:** When user requests application startup, ALWAYS follow the complete diagnostic and startup sequence above. Don't skip steps or make assumptions about current state.

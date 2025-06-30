@@ -72,12 +72,7 @@ export class RecipesController {
   })
   async getFeaturedRecipes(@Query('page') page: string = '1', @Query('limit') limit: string = '10') {
     try {
-      const recipes = await this.recipesService.getFeaturedRecipes(parseInt(page), parseInt(limit));
-      return {
-        success: true,
-        data: recipes,
-        message: 'Featured recipes retrieved successfully'
-      };
+      return await this.recipesService.getFeaturedRecipes(parseInt(page), parseInt(limit));
     } catch (error) {
       throw new HttpException('Failed to retrieve featured recipes', HttpStatus.INTERNAL_SERVER_ERROR);
     }

@@ -77,7 +77,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
               {/* Logo/Brand Section */}
               <View style={styles.brandSection}>
                 <View style={styles.logoContainer}>
-                  <Feather name="utensils" size={60} color={COLORS.white} />
+                  <Feather name="menu" size={60} color={COLORS.white} />
                 </View>
                 <Text style={styles.brandName}>MyCheff</Text>
                 <Text style={styles.tagline}>Mutfağınızın Dijital Asistanı</Text>

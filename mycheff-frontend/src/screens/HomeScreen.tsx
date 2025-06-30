@@ -62,7 +62,7 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
   const fetchRecipes = async () => {
     try {
       setIsLoading(true);
-      const response = await recipeAPI.getFeatured(1, 20);
+      const response = await recipeAPI.getFeaturedRecipes(1, 20);
       setRecipes(response.data || []);
     } catch (error) {
       console.error('Error fetching recipes:', error);
@@ -75,10 +75,10 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
 
   // Grid layout calculations using design system
   const gridLayout = useMemo(() => {
-    const numColumns = DEFAULTS.GRID_COLUMNS.PHONE;
+    const numColumns = 2; // Force 2 columns
     const horizontalPadding = COMPONENT_SPACING.GRID.HORIZONTAL_PADDING * 2;
     const spacing = COMPONENT_SPACING.GRID.SPACING;
-    const availableWidth = screenWidth - horizontalPadding - spacing;
+    const availableWidth = screenWidth - horizontalPadding;
     const cardWidth = (availableWidth - spacing) / numColumns;
     
     return { numColumns, cardWidth, spacing };
@@ -92,7 +92,12 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
   const onRefresh = useCallback(() => {
     refetchCategories();
     fetchRecipes();
-  }, [refetchCategories, fetchRecipes]);
+  }, [refetchCategories]);
+
+  // Fetch recipes on component mount
+  React.useEffect(() => {
+    fetchRecipes();
+  }, []);
 
   const handleSearchPress = useCallback((): void => {
     navigation?.navigate('Chat');
@@ -134,6 +139,37 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
         break;
     }
   }, [navigation]);
+
+  // Render recipe grid in 2 columns
+  const renderRecipeGrid = () => {
+    const rows = [];
+    for (let i = 0; i < displayRecipes.length; i += 2) {
+      const leftRecipe = displayRecipes[i];
+      const rightRecipe = displayRecipes[i + 1];
+      
+      rows.push(
+        <View key={`row-${i}`} style={styles.recipeRow}>
+          <View style={[styles.recipeCardWrapper, { width: gridLayout.cardWidth }]}>
+            <RecipeCard
+              recipe={leftRecipe}
+              onPress={() => handleRecipePress(leftRecipe)}
+              onFavoritePress={() => handleFavoritePress(leftRecipe.id)}
+            />
+          </View>
+          {rightRecipe && (
+            <View style={[styles.recipeCardWrapper, { width: gridLayout.cardWidth }]}>
+              <RecipeCard
+                recipe={rightRecipe}
+                onPress={() => handleRecipePress(rightRecipe)}
+                onFavoritePress={() => handleFavoritePress(rightRecipe.id)}
+              />
+            </View>
+          )}
+        </View>
+      );
+    }
+    return rows;
+  };
 
   // Error handling
   if (categoriesError) {
@@ -178,15 +214,7 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
         {/* Recipe Grid (Tek liste - başlık yok) */}
         <View style={styles.recipesSection}>
           <View style={styles.recipesGrid}>
-            {displayRecipes.map((recipe, index) => (
-              <View key={recipe.id} style={[styles.recipeCardWrapper, { width: gridLayout.cardWidth }]}>
-                <RecipeCard
-                  recipe={recipe}
-                  onPress={() => handleRecipePress(recipe)}
-                  onFavoritePress={() => handleFavoritePress(recipe.id)}
-                />
-              </View>
-            ))}
+            {renderRecipeGrid()}
           </View>
         </View>
 
@@ -222,7 +250,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: COMPONENT_SPACING.NAVIGATION.HEIGHT + SPACING.xl,
+    paddingBottom: 100, // Fixed navigation overlap - proper bottom padding
   },
   searchContainer: {
     paddingHorizontal: COMPONENT_SPACING.GRID.HORIZONTAL_PADDING,
@@ -236,13 +264,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: COMPONENT_SPACING.GRID.HORIZONTAL_PADDING,
   },
   recipesGrid: {
+    flex: 1,
+  },
+  recipeRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   recipeCardWrapper: {
-    marginBottom: SPACING.lg,
+    // Width set dynamically from gridLayout.cardWidth
   },
   loadingContainer: {
     paddingVertical: SPACING.xl,

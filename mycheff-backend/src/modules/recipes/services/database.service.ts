@@ -9,9 +9,9 @@ export class DatabaseService {
   constructor() {
     this.client = new Client({
       host: 'localhost',
-      port: 5432,
+              port: 5432,
       user: 'postgres',
-      password: '123',
+              password: 'password',
       database: 'mycheff',
     });
   }

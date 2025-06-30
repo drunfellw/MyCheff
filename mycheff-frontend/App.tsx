@@ -52,12 +52,14 @@ const AppContent = React.memo(() => {
   const { isAuthenticated, isLoading } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<Screen>('Welcome');
   const [navigationHistory, setNavigationHistory] = useState<Screen[]>(['Welcome']);
+  const [currentParams, setCurrentParams] = useState<NavigationParams>({});
 
   const navigation: Navigation = useMemo(() => ({
     navigate: (screen: string, params?: NavigationParams) => {
       const targetScreen = screen as Screen;
       setCurrentScreen(targetScreen);
       setNavigationHistory(prev => [...prev, targetScreen]);
+      setCurrentParams(params || {});
     },
     goBack: () => {
       setNavigationHistory(prev => {
@@ -65,6 +67,7 @@ const AppContent = React.memo(() => {
           const newHistory = prev.slice(0, -1);
           const previousScreen = newHistory[newHistory.length - 1];
           setCurrentScreen(previousScreen);
+          setCurrentParams({}); // Clear params when going back
           return newHistory;
         }
         return prev;
@@ -74,7 +77,7 @@ const AppContent = React.memo(() => {
   }), [currentScreen]);
 
   const renderScreen = useCallback(() => {
-    const screenProps = { navigation };
+    const screenProps = { navigation, route: { params: currentParams } };
     
     // Show authentication screens if not authenticated
     if (!isAuthenticated) {
@@ -124,7 +127,7 @@ const AppContent = React.memo(() => {
       default:
         return <HomeScreen {...screenProps} />;
     }
-  }, [currentScreen, navigation, isAuthenticated]);
+  }, [currentScreen, navigation, isAuthenticated, currentParams]);
 
   // Show loading screen while checking authentication
   if (isLoading) {

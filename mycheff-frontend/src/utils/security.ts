@@ -52,12 +52,17 @@ export const validateRecipeData = (recipe: any): { isValid: boolean; errors: str
     errors.push('Recipe title is required and must be at least 3 characters');
   }
   
-  if (!recipe.time || typeof recipe.time !== 'string') {
-    errors.push('Recipe time is required');
+  if (!recipe.cookingTime || typeof recipe.cookingTime !== 'string') {
+    errors.push('Recipe cookingTime is required');
   }
   
-  if (!recipe.image || !isValidImageUrl(recipe.image)) {
-    errors.push('Valid recipe image URL is required');
+  if (!recipe.media || !Array.isArray(recipe.media) || recipe.media.length === 0) {
+    errors.push('Recipe media array is required and must not be empty');
+  } else {
+    const firstMedia = recipe.media[0];
+    if (!firstMedia?.url || !isValidImageUrl(firstMedia.url)) {
+      errors.push('First media item must have a valid image URL');
+    }
   }
   
   if (recipe.category && typeof recipe.category !== 'string') {

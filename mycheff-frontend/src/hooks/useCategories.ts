@@ -1,15 +1,43 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { categoryAPI } from '../services/api';
 import type { Category, UseCategoriesResult } from '../types';
-import { CATEGORIES_DATA } from '../services/mockData';
 
 /**
  * Custom hook for managing categories state and operations
  */
 export const useCategories = (): UseCategoriesResult => {
-  const [categories, setCategories] = useState<Category[]>(CATEGORIES_DATA);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [activeIndex, setActiveIndex] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Load categories from API
+   */
+  const loadCategories = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await categoryAPI.getCategories();
+      setCategories(response || []);
+      
+      if (response && response.length > 0) {
+        setActiveIndex(0);
+      }
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load categories');
+      setCategories([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Load categories on mount
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
 
   /**
    * Set active category index and update categories state
@@ -70,31 +98,15 @@ export const useCategories = (): UseCategoriesResult => {
    * Reset categories to initial state
    */
   const resetCategories = useCallback(() => {
-    setCategories(CATEGORIES_DATA);
-    setActiveIndex(0);
-    setError(null);
-  }, []);
+    loadCategories();
+  }, [loadCategories]);
 
   /**
    * Refresh categories (useful for future API integration)
    */
   const refreshCategories = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // In real app, this would be an API call
-      setCategories(CATEGORIES_DATA);
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to refresh categories');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await loadCategories();
+  }, [loadCategories]);
 
   return {
     categories,

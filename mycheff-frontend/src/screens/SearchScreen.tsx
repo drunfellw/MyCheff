@@ -10,6 +10,8 @@ import {
   Animated,
   Dimensions,
   Keyboard,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,21 +20,10 @@ import { NavigationBar } from '../components';
 import ScreenHeader from '../components/ScreenHeader';
 import RecipeCard from '../components/RecipeCard';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
-import { recipesAPI } from '../services/recipesAPI';
+import { recipeAPI } from '../services/api';
+import type { Recipe } from '../types';
 
 const { width: screenWidth } = Dimensions.get('window');
-
-interface Recipe {
-  id: string;
-  title?: string;
-  category?: string;
-  image?: string;
-  time?: string;
-  rating?: string;
-  difficulty?: 'Easy' | 'Medium' | 'Hard';
-  ingredients?: string[];
-  isFavorite?: boolean;
-}
 
 interface SearchScreenProps {
   navigation?: {
@@ -60,11 +51,12 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
   const searchInputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // API search function
-  const performSearch = async (query: string, filter: string = 'All') => {
+  // API search function - optimized to prevent keyboard issues
+  const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       setHasSearched(false);
+      setShowResults(false);
       return;
     }
 
@@ -73,39 +65,13 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
       setHasSearched(true);
       
       // Call API search endpoint
-      const response = await recipesAPI.search(query, 1, 20);
+      const response = await recipeAPI.searchRecipes({ 
+        query: query.trim(), 
+        page: 1, 
+        limit: 20 
+      });
+      
       setSearchResults(response.data || []);
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Search functionality - Backend API call point
-  const searchRecipes = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      setShowResults(false);
-      return;
-    }
-
-    setIsLoading(true);
-    
-    try {
-      // TODO: Replace with actual API call
-      // const response = await recipeService.search(query);
-      // setSearchResults(response.data);
-      
-      // Mock search simulation
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const filtered = searchResults.filter(recipe =>
-        recipe.title?.toLowerCase().includes(query.toLowerCase())
-      );
-      
-      setSearchResults(filtered);
       setShowResults(true);
       
       // Animate results appearance
@@ -118,25 +84,39 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
     } catch (error) {
       console.error('Search error:', error);
       setSearchResults([]);
+      setShowResults(false);
     } finally {
       setIsLoading(false);
     }
-  }, [searchResults, fadeAnim]);
+  }, [fadeAnim]);
 
-  // Debounced search
+  // Debounced search with timeout ref to prevent state conflicts
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      searchRecipes(searchQuery);
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Set new timeout
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(searchQuery);
     }, 300);
 
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, searchRecipes]);
+    // Cleanup
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, performSearch]);
 
   // Search recipes with selected ingredients
   const handleSearchRecipes = useCallback(() => {
     if (searchResults.length > 0) {
       navigation?.navigate('SearchResults', { 
-        recipes: searchResults.map(r => r.title)
+        recipes: searchResults.map(r => r.title || r.name || '')
       });
     }
   }, [searchResults, navigation]);
@@ -162,14 +142,28 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
       
       rows.push(
         <View key={`row-${i}`} style={styles.recipeRow}>
-          {rowRecipes.map((recipe) => (
-            <RecipeCard
-              key={recipe.id}
-              recipe={recipe}
-              onPress={handleRecipePress}
-              onFavoritePress={handleFavoritePress}
-            />
-          ))}
+          {rowRecipes.map((recipe) => {
+            // Transform API Recipe to RecipeCard Recipe
+            const cardRecipe = {
+              id: recipe.id,
+              title: recipe.title || recipe.name || 'Recipe',
+              description: recipe.description,
+              imageUrl: recipe.image,
+              cookingTimeMinutes: recipe.cookingTimeMinutes || recipe.cookingTime,
+              difficultyLevel: recipe.difficultyLevel,
+              isFavorite: recipe.isFavorite,
+              categories: recipe.categories?.map(cat => ({ name: cat.name || '' }))
+            };
+            
+            return (
+              <RecipeCard
+                key={recipe.id}
+                recipe={cardRecipe}
+                onPress={() => handleRecipePress(recipe)}
+                onFavoritePress={handleFavoritePress}
+              />
+            );
+          })}
         </View>
       );
     }
@@ -202,93 +196,110 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
       activeOpacity={0.7}
     >
       <View style={styles.resultContent}>
-        <Text style={styles.resultName}>{item.title}</Text>
-        <Text style={styles.resultCategory}>{item.category}</Text>
+        <Text style={styles.resultName}>{item.title || item.name}</Text>
+        <Text style={styles.resultCategory}>Recipe</Text>
       </View>
       <Ionicons name="add-circle-outline" size={24} color={COLORS.primary} />
     </TouchableOpacity>
   ), [handleSearchRecipes]);
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <ScreenHeader
-        title="Search Recipes"
-        onBackPress={() => navigation?.goBack()}
-        backgroundColor={COLORS.background}
-      />
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          {/* Header */}
+          <ScreenHeader
+            title="Search Recipes"
+            onBackPress={() => navigation?.goBack()}
+            backgroundColor={COLORS.background}
+          />
 
-      <View style={styles.content}>
-        {/* Search Input */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={22} color={COLORS.textMuted} />
-            <TextInput
-              ref={searchInputRef}
-              style={styles.input}
-              placeholder="Search recipes..."
-              placeholderTextColor={COLORS.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="words"
-              autoCorrect={false}
-              autoFocus={false}
-              returnKeyType="search"
-              blurOnSubmit={false}
-            />
-            
-            {isLoading && (
-              <View style={styles.loadingContainer}>
-                <Ionicons name="hourglass" size={20} color={COLORS.textMuted} />
+          <View style={styles.content}>
+            {/* Search Input */}
+            <View style={styles.searchContainer}>
+              <View style={styles.searchBar}>
+                <Ionicons name="search" size={22} color={COLORS.textMuted} />
+                <TextInput
+                  ref={searchInputRef}
+                  style={styles.input}
+                  placeholder="Search recipes..."
+                  placeholderTextColor={COLORS.textMuted}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoFocus={false}
+                  returnKeyType="search"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => performSearch(searchQuery)}
+                  textContentType="none"
+                  autoComplete="off"
+                  keyboardType="default"
+                />
+                
+                {isLoading && (
+                  <View style={styles.loadingContainer}>
+                    <Ionicons name="hourglass" size={20} color={COLORS.textMuted} />
+                  </View>
+                )}
+                
+                {searchQuery.length > 0 && !isLoading && (
+                  <TouchableOpacity 
+                    onPress={() => {
+                      setSearchQuery('');
+                      searchInputRef.current?.focus();
+                    }}
+                    style={styles.clearButton}
+                  >
+                    <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* Search Results */}
+            {showResults && (
+              <Animated.View style={[styles.resultsContainer, { opacity: fadeAnim }]}>
+                {searchResults.length > 0 ? (
+                  <View style={styles.recipeGrid}>
+                    {renderRecipeGrid()}
+                  </View>
+                ) : (
+                  hasSearched && (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="search" size={48} color={COLORS.textMuted} />
+                      <Text style={styles.emptyText}>No recipes found</Text>
+                      <Text style={styles.emptySubtext}>Try a different search term</Text>
+                    </View>
+                  )
+                )}
+              </Animated.View>
+            )}
+
+            {/* Empty State */}
+            {!showResults && (
+              <View style={styles.welcomeState}>
+                <Ionicons name="restaurant-outline" size={64} color={COLORS.textMuted} />
+                <Text style={styles.welcomeTitle}>Find Your Perfect Recipe</Text>
+                <Text style={styles.welcomeSubtitle}>
+                  Search for delicious recipes by name or ingredient
+                </Text>
               </View>
             )}
-            
-            {searchQuery.length > 0 && !isLoading && (
-              <TouchableOpacity 
-                onPress={() => setSearchQuery('')}
-                style={styles.clearButton}
-              >
-                <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
-              </TouchableOpacity>
-            )}
           </View>
+          
+          {/* Navigation Bar */}
+          <NavigationBar
+            activeTab="search"
+            onTabPress={handleTabPress}
+          />
         </View>
-
-        {/* Search Results */}
-        {showResults && (
-          <Animated.View style={[styles.resultsContainer, { opacity: fadeAnim }]}>
-            {searchResults.length > 0 ? (
-              <View style={styles.recipeGrid}>
-                {renderRecipeGrid()}
-              </View>
-            ) : (
-              <View style={styles.emptyState}>
-                <Ionicons name="search" size={48} color={COLORS.textMuted} />
-                <Text style={styles.emptyText}>No recipes found</Text>
-                <Text style={styles.emptySubtext}>Try a different search term</Text>
-              </View>
-            )}
-          </Animated.View>
-        )}
-
-        {/* Empty State */}
-        {!showResults && (
-          <View style={styles.welcomeState}>
-            <Ionicons name="restaurant-outline" size={64} color={COLORS.textMuted} />
-            <Text style={styles.welcomeTitle}>Find Your Perfect Recipe</Text>
-            <Text style={styles.welcomeSubtitle}>
-              Search for delicious recipes by name or ingredient
-            </Text>
-          </View>
-        )}
-      </View>
-      
-      {/* Navigation Bar */}
-      <NavigationBar
-        activeTab="search"
-        onTabPress={handleTabPress}
-      />
-    </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 

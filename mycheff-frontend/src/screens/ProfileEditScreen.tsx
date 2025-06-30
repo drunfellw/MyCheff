@@ -9,6 +9,10 @@ import {
   Image,
   Alert,
   Switch,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -99,7 +103,11 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
   }, []);
 
   return (
-    <View style={styles.container}>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
         {/* Header */}
         <ScreenHeader
           title="Edit Profile"
@@ -122,6 +130,7 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
           style={styles.content} 
           contentContainerStyle={{ paddingTop: SPACING.lg }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {/* Avatar Section */}
           <View style={styles.avatarSection}>
@@ -145,7 +154,12 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
                 value={profile.name}
                 onChangeText={(text) => updateProfile('name', text)}
                 placeholder="Enter your full name"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={COLORS.textSecondary}
+                blurOnSubmit={false}
+                returnKeyType="next"
+                autoCapitalize="words"
+                textContentType="name"
+                autoComplete="name"
               />
             </View>
 
@@ -158,7 +172,11 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
                 placeholder="Enter your email"
                 keyboardType="email-address"
                 autoCapitalize="none"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={COLORS.textSecondary}
+                blurOnSubmit={false}
+                returnKeyType="next"
+                textContentType="emailAddress"
+                autoComplete="email"
               />
             </View>
 
@@ -170,7 +188,11 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
                 onChangeText={(text) => updateProfile('phone', text)}
                 placeholder="Enter your phone number"
                 keyboardType="phone-pad"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={COLORS.textSecondary}
+                blurOnSubmit={false}
+                returnKeyType="next"
+                textContentType="telephoneNumber"
+                autoComplete="tel"
               />
             </View>
 
@@ -181,7 +203,11 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
                 value={profile.location}
                 onChangeText={(text) => updateProfile('location', text)}
                 placeholder="Enter your location"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={COLORS.textSecondary}
+                blurOnSubmit={false}
+                returnKeyType="next"
+                textContentType="addressCity"
+                autoComplete="postal-address-locality"
               />
             </View>
 
@@ -194,7 +220,11 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
                 placeholder="Enter your website URL"
                 keyboardType="url"
                 autoCapitalize="none"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={COLORS.textSecondary}
+                blurOnSubmit={false}
+                returnKeyType="next"
+                textContentType="URL"
+                autoComplete="off"
               />
             </View>
 
@@ -204,7 +234,7 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
                 <Text style={styles.dateText}>
                   {profile.birthDate ? new Date(profile.birthDate).toLocaleDateString() : 'Select date'}
                 </Text>
-                <Ionicons name="calendar-outline" size={20} color={COLORS.textMuted} />
+                <Ionicons name="calendar-outline" size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -223,7 +253,7 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={COLORS.textSecondary}
               />
               <Text style={styles.characterCount}>{profile.bio.length}/200</Text>
             </View>
@@ -278,7 +308,8 @@ const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation }) => 
 
           <View style={styles.bottomSpacing} />
         </ScrollView>
-    </View>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -336,7 +367,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: FONT_SIZE.SM,
-    color: COLORS.textMuted,
+    color: COLORS.textSecondary,
   },
   section: {
     marginBottom: SPACING.xl,
@@ -372,7 +403,7 @@ const styles = StyleSheet.create({
   },
   characterCount: {
     fontSize: FONT_SIZE.XS,
-    color: COLORS.textMuted,
+    color: COLORS.textSecondary,
     textAlign: 'right',
     marginTop: SPACING.xs,
   },
@@ -416,7 +447,7 @@ const styles = StyleSheet.create({
   },
   settingSubtitle: {
     fontSize: FONT_SIZE.SM,
-    color: COLORS.textMuted,
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   dangerButton: {
@@ -437,6 +468,12 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: SPACING.xl,
+  },
+  emptyStateText: {
+    fontSize: FONT_SIZE.MD,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
 

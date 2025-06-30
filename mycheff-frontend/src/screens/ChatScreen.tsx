@@ -12,6 +12,8 @@ import {
   SafeAreaView,
   ScrollView,
   Dimensions,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,7 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScreenHeader from '../components/ScreenHeader';
 import RecipeCard from '../components/RecipeCard';
 import NavigationBar from '../components/NavigationBar';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, FONT_FAMILY, COMPONENT_SPACING } from '../constants';
+import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, FONT_FAMILY, COMPONENT_SPACING, SHADOW_PRESETS } from '../constants';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -82,7 +84,7 @@ const INGREDIENTS_DATA: Ingredient[] = [
   { id: '16', name: 'Spinach', emoji: '🥬', category: 'vegetables', aliases: ['spinach', 'ıspanak'] },
   { id: '17', name: 'Beef', emoji: '🥩', category: 'proteins', aliases: ['beef', 'et'] },
   { id: '18', name: 'Fish', emoji: '🐟', category: 'proteins', aliases: ['fish', 'balık'] },
-  { id: '19', name: 'Milk', emoji: '🥛', category: 'dairy', aliases: ['milk', 'süt'] },
+  { id: '19', name: 'Milk', emoji: '��', category: 'dairy', aliases: ['milk', 'süt'] },
   { id: '20', name: 'Butter', emoji: '🧈', category: 'dairy', aliases: ['butter', 'tereyağı'] },
 ];
 
@@ -422,149 +424,171 @@ const ChatScreen: React.FC<Props> = ({ navigation }) => {
     }
   }, [navigation]);
 
-  return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <ScreenHeader
-        title="Chef Assistant"
-        onBackPress={() => navigation?.goBack()}
-        backgroundColor={COLORS.background}
-        rightElement={
-          (selectedIngredients.length > 0 || recipes.length > 0) ? (
-            <TouchableOpacity 
-              style={styles.clearButton}
-              onPress={handleClearAll}
-            >
-              <Ionicons name="trash-outline" size={20} color={COLORS.error} />
-              <Text style={styles.clearButtonText}>Clear All</Text>
-            </TouchableOpacity>
-          ) : undefined
-        }
-      />
+  const handleInputChange = useCallback((text: string) => {
+    setInputText(text);
+  }, []);
 
-      {/* Search Input */}
-      <View style={styles.searchSection}>
-        <View style={styles.searchRow}>
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color={COLORS.textMuted} style={styles.searchIcon} />
-            <TextInput
-              ref={inputRef}
-              style={styles.searchInput}
-              placeholder="Search ingredients (e.g. tomato, onion)..."
-              placeholderTextColor={COLORS.textMuted}
-              value={inputText}
-              onChangeText={setInputText}
-              autoFocus={false}
-              returnKeyType="search"
-            />
-            {inputText.length > 0 && (
-              <TouchableOpacity 
-                onPress={() => setInputText('')}
-                style={styles.clearInputButton}
-              >
-                <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
-              </TouchableOpacity>
+  return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <SafeAreaView style={styles.container}>
+          {/* Header */}
+          <ScreenHeader
+            title="Chef Assistant"
+            onBackPress={() => navigation?.goBack()}
+            backgroundColor={COLORS.background}
+            rightElement={
+              (selectedIngredients.length > 0 || recipes.length > 0) ? (
+                <TouchableOpacity 
+                  style={styles.clearButton}
+                  onPress={handleClearAll}
+                >
+                  <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+                  <Text style={styles.clearButtonText}>Clear All</Text>
+                </TouchableOpacity>
+              ) : undefined
+            }
+          />
+
+          {/* Search Input */}
+          <View style={styles.searchSection}>
+            <View style={styles.searchRow}>
+              <View style={styles.searchContainer}>
+                <Ionicons name="search" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
+                <TextInput
+                  ref={inputRef}
+                  style={styles.searchInput}
+                  placeholder="Search ingredients (e.g. tomato, onion)..."
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={inputText}
+                  onChangeText={handleInputChange}
+                  autoFocus={false}
+                  returnKeyType="search"
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  blurOnSubmit={false}
+                  textContentType="none"
+                  autoComplete="off"
+                  onSubmitEditing={() => {
+                    if (suggestions.length > 0) {
+                      handleSelectIngredient(suggestions[0]);
+                    }
+                  }}
+                />
+                {inputText.length > 0 && (
+                  <TouchableOpacity 
+                    onPress={() => setInputText('')}
+                    style={styles.clearInputButton}
+                  >
+                    <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Get Recipes Button */}
+              {selectedIngredients.length > 0 && (
+                <TouchableOpacity 
+                  style={styles.getRecipesButton}
+                  onPress={handleGetRecipes}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.getRecipesButtonText}>
+                    {isLoading ? 'Loading...' : 'Get Recipes'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Suggestions */}
+            {showSuggestions && (
+              <View style={styles.suggestionsContainer}>
+                {suggestions.map((item) => (
+                  <TouchableOpacity 
+                    key={item.id}
+                    style={styles.suggestionItem}
+                    onPress={() => handleSelectIngredient(item)}
+                  >
+                    <Text style={styles.suggestionText}>{item.name}</Text>
+                    <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
+                  </TouchableOpacity>
+                ))}
+              </View>
             )}
           </View>
 
-          {/* Get Recipes Button */}
+          {/* Selected Ingredients */}
           {selectedIngredients.length > 0 && (
-            <TouchableOpacity 
-              style={styles.getRecipesButton}
-              onPress={handleGetRecipes}
-              disabled={isLoading}
-            >
-              <Text style={styles.getRecipesButtonText}>
-                {isLoading ? 'Loading...' : 'Get Recipes'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Suggestions */}
-        {showSuggestions && (
-          <View style={styles.suggestionsContainer}>
-            {suggestions.map((item) => (
-              <TouchableOpacity 
-                key={item.id}
-                style={styles.suggestionItem}
-                onPress={() => handleSelectIngredient(item)}
-              >
-                <Text style={styles.suggestionText}>{item.name}</Text>
-                <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </View>
-
-      {/* Selected Ingredients */}
-      {selectedIngredients.length > 0 && (
-        <View style={styles.selectedSection}>
-          <Text style={styles.selectedTitle}>Selected Ingredients ({selectedIngredients.length})</Text>
-          <View style={styles.ingredientsContainer}>
-            {selectedIngredients.map((ingredient) => (
-              <View key={ingredient.id} style={styles.ingredientChip}>
-                <Text style={styles.ingredientText}>{ingredient.name}</Text>
-                <TouchableOpacity 
-                  onPress={() => handleRemoveIngredient(ingredient.id)}
-                  style={styles.chipRemove}
-                >
-                  <Ionicons name="close" size={14} color={COLORS.white} />
-                </TouchableOpacity>
+            <View style={styles.selectedSection}>
+              <Text style={styles.selectedTitle}>Selected Ingredients ({selectedIngredients.length})</Text>
+              <View style={styles.ingredientsContainer}>
+                {selectedIngredients.map((ingredient) => (
+                  <View key={ingredient.id} style={styles.ingredientChip}>
+                    <Text style={styles.ingredientText}>{ingredient.name}</Text>
+                    <TouchableOpacity 
+                      onPress={() => handleRemoveIngredient(ingredient.id)}
+                      style={styles.chipRemove}
+                    >
+                      <Ionicons name="close" size={14} color={COLORS.white} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-          <View style={styles.sectionDivider} />
-        </View>
-      )}
+              <View style={styles.sectionDivider} />
+            </View>
+          )}
 
-      {/* Content */}
-      <ScrollView 
-        style={styles.content} 
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {recipes.length > 0 ? (
-          <View style={styles.recipesSection}>
-            <Text style={styles.recipesSectionTitle}>
-              {recipes.length} Recipe{recipes.length > 1 ? 's' : ''} Found
-            </Text>
-            
-            {/* Recipe Grid */}
-            <View style={styles.recipeGrid}>
-              {renderRecipeGrid()}
-            </View>
-          </View>
-        ) : selectedIngredients.length > 0 ? (
-          <View style={styles.emptyState}>
-            <View style={styles.chefHatContainer}>
-              <Text style={styles.chefHat}>👨‍🍳</Text>
-            </View>
-            <Text style={styles.emptyStateTitle}>Click "Get Recipes"</Text>
-            <Text style={styles.emptyStateSubtitle}>
-              Let's see what you can make with {selectedIngredients.length} ingredient{selectedIngredients.length > 1 ? 's' : ''}!
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.welcomeState}>
-            <View style={styles.chefHatContainer}>
-              <Text style={styles.chefHat}>👨‍🍳</Text>
-            </View>
-            <Text style={styles.welcomeTitle}>Search Ingredients</Text>
-            <Text style={styles.welcomeSubtitle}>
-              Find and select ingredients from your kitchen to discover personalized recipes
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+          {/* Content */}
+          <ScrollView 
+            style={styles.content} 
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {recipes.length > 0 ? (
+              <View style={styles.recipesSection}>
+                <Text style={styles.recipesSectionTitle}>
+                  {recipes.length} Recipe{recipes.length > 1 ? 's' : ''} Found
+                </Text>
+                
+                {/* Recipe Grid */}
+                <View style={styles.recipeGrid}>
+                  {renderRecipeGrid()}
+                </View>
+              </View>
+            ) : selectedIngredients.length > 0 ? (
+              <View style={styles.emptyState}>
+                <View style={styles.chefHatContainer}>
+                  <Text style={styles.chefHat}>👨‍🍳</Text>
+                </View>
+                <Text style={styles.emptyStateTitle}>Click "Get Recipes"</Text>
+                <Text style={styles.emptyStateSubtitle}>
+                  Let's see what you can make with {selectedIngredients.length} ingredient{selectedIngredients.length > 1 ? 's' : ''}!
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.welcomeState}>
+                <View style={styles.chefHatContainer}>
+                  <Text style={styles.chefHat}>👨‍🍳</Text>
+                </View>
+                <Text style={styles.welcomeTitle}>Search Ingredients</Text>
+                <Text style={styles.welcomeSubtitle}>
+                  Find and select ingredients from your kitchen to discover personalized recipes
+                </Text>
+              </View>
+            )}
+          </ScrollView>
 
-      {/* Navigation Bar */}
-      <NavigationBar
-        activeTab={activeTab}
-        onTabPress={handleTabPress}
-      />
-    </SafeAreaView>
+          {/* Navigation Bar */}
+          <NavigationBar
+            activeTab={activeTab}
+            onTabPress={handleTabPress}
+          />
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -604,7 +628,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FONT_SIZE.MD,
     color: COLORS.textPrimary,
-    paddingVertical: SPACING.md,
     fontFamily: FONT_FAMILY.REGULAR,
   },
   clearInputButton: {
@@ -631,10 +654,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.MD,
     marginTop: SPACING.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    ...SHADOW_PRESETS.SMALL,
     elevation: 4,
   },
   suggestionItem: {
@@ -661,7 +681,7 @@ const styles = StyleSheet.create({
   selectedTitle: {
     fontSize: FONT_SIZE.SM,
     fontFamily: FONT_FAMILY.MEDIUM,
-    color: COLORS.textMuted,
+    color: COLORS.textSecondary,
     marginBottom: SPACING.sm,
   },
   ingredientsContainer: {
@@ -674,8 +694,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.ROUND,
-    paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
     gap: SPACING.sm,
   },
   ingredientText: {
@@ -687,10 +707,9 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     alignItems: 'center',
-    marginLeft: SPACING.xs,
+    justifyContent: 'center',
   },
   
   // Content
@@ -707,10 +726,9 @@ const styles = StyleSheet.create({
   },
   recipesSectionTitle: {
     fontSize: FONT_SIZE.LG,
-    fontFamily: FONT_FAMILY.SEMI_BOLD,
+    fontFamily: FONT_FAMILY.BOLD,
     color: COLORS.textPrimary,
     marginBottom: SPACING.lg,
-    textAlign: 'center',
   },
   
   // Recipe Grid
@@ -727,23 +745,16 @@ const styles = StyleSheet.create({
   // Empty States
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
+    justifyContent: 'center',
     paddingVertical: SPACING.xxxl,
   },
   chefHatContainer: {
     marginBottom: SPACING.lg,
-    backgroundColor: COLORS.primary,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.ROUND,
+    padding: SPACING.lg,
+    ...SHADOW_PRESETS.LARGE,
     elevation: 8,
   },
   chefHat: {
@@ -751,41 +762,42 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     fontSize: FONT_SIZE.XL,
-    fontFamily: FONT_FAMILY.SEMI_BOLD,
+    fontFamily: FONT_FAMILY.BOLD,
     color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
     textAlign: 'center',
   },
   emptyStateSubtitle: {
     fontSize: FONT_SIZE.MD,
-    color: COLORS.textSecondary,
     fontFamily: FONT_FAMILY.REGULAR,
+    color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
+    paddingHorizontal: SPACING.xl,
   },
   
   welcomeState: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
+    justifyContent: 'center',
     paddingVertical: SPACING.xxxl,
   },
   welcomeTitle: {
     fontSize: FONT_SIZE.XL,
-    fontFamily: FONT_FAMILY.SEMI_BOLD,
+    fontFamily: FONT_FAMILY.BOLD,
     color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
     textAlign: 'center',
   },
   welcomeSubtitle: {
     fontSize: FONT_SIZE.MD,
-    color: COLORS.textSecondary,
     fontFamily: FONT_FAMILY.REGULAR,
+    color: COLORS.textSecondary,
     textAlign: 'center',
+    paddingHorizontal: SPACING.xl,
     lineHeight: 22,
   },
-  
+   
   clearButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -799,10 +811,9 @@ const styles = StyleSheet.create({
   },
   
   sectionDivider: {
-    height: 3,
+    height: 1,
     backgroundColor: COLORS.border,
-    marginVertical: SPACING.md,
-    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
   },
 });
 

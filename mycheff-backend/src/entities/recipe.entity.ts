@@ -70,6 +70,10 @@ export class Recipe {
   @Column({ name: 'rating_count', default: 0 })
   ratingCount: number;
 
+  @ApiProperty({ description: 'Primary image URL' })
+  @Column({ name: 'image_url', type: 'text', nullable: true })
+  imageUrl: string;
+
   @ApiProperty({ description: 'Creation date' })
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -146,14 +150,6 @@ export class Recipe {
 
   set categoryId(value: string) {
     // Categories are handled through many-to-many relation
-  }
-
-  get imageUrl(): string {
-    return this.media?.find(m => m.isPrimary)?.url || this.media?.[0]?.url || '';
-  }
-
-  set imageUrl(value: string) {
-    // Do nothing, images are handled through media relation
   }
 
   get prepTime(): number {

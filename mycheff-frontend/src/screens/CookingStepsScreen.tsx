@@ -17,7 +17,7 @@ import {
   SHADOW_PRESETS,
   SPACING 
 } from '../constants';
-import { recipesAPI } from '../services/recipesAPI';
+import { recipeAPI } from '../services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -61,7 +61,7 @@ const CookingStepsScreen: React.FC<CookingStepsScreenProps> = ({ navigation, rou
     const fetchInstructions = async () => {
       try {
         setIsLoading(true);
-        const response = await recipesAPI.getById(recipeId);
+        const response = await recipeAPI.getRecipeById(recipeId);
         if (response.instructions) {
           setInstructions(response.instructions);
         }

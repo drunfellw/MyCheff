@@ -80,8 +80,14 @@ export default function HomePage() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const dashboardStats = await apiService.getDashboardStats();
-        setStats(dashboardStats);
+        // Mock data since backend doesn't have getDashboardStats endpoint yet
+        const mockStats = {
+          totalUsers: 156,
+          totalRecipes: 342,
+          totalCategories: 12,
+          totalLanguages: 3
+        };
+        setStats(mockStats);
       } catch (error) {
         console.error('Stats fetch error:', error);
       } finally {

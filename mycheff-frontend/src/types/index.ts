@@ -442,4 +442,19 @@ export type CategoryWithTranslation = Category & {
 export type IngredientWithTranslation = Ingredient & {
   name: string;
   aliases: string[];
-}; 
+};
+
+// Hook Return Types
+export interface UseCategoriesResult {
+  categories: Category[];
+  activeIndex: number;
+  setActiveIndex: (index: number) => void;
+  loading: boolean;
+  error: string | null;
+  activeCategory: Category | null;
+  getCategoryById: (id: string) => Category | undefined;
+  getCategoryIndexById: (id: string) => number;
+  setActiveCategoryById: (id: string) => void;
+  resetCategories: () => void;
+  refreshCategories: () => Promise<void>;
+} 

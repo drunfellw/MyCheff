@@ -165,3 +165,6 @@ export const recipesAPI = {
 
 // Export default api instance
 export default api;
+
+// Export as apiService for compatibility
+export { api as apiService };
