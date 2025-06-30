@@ -3,19 +3,21 @@ import {
   View, 
   Text, 
   ScrollView, 
+  FlatList,
   StyleSheet, 
   Dimensions,
   ActivityIndicator,
   RefreshControl
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Toast from 'react-native-toast-message';
 
 import SearchBar from '../components/SearchBar';
 import ScrollMenu from '../components/ScrollMenu';
 import RecipeCard from '../components/RecipeCard';
 import NavigationBar from '../components/NavigationBar';
-import { recipeAPI, categoryAPI } from '../services/api';
+import { recipeAPI, categoryAPI, userAPI } from '../services/api';
 import { 
   COLORS, 
   COMPONENT_SPACING, 
@@ -42,6 +44,7 @@ interface HomeScreenProps {
  */
 const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('home');
   const [isLoading, setIsLoading] = useState(false);
@@ -58,15 +61,67 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
     queryFn: () => categoryAPI.getCategories(),
   });
 
+  // Favorite mutations
+  const addToFavoritesMutation = useMutation({
+    mutationFn: userAPI.addToFavorites,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userFavorites'] });
+      Toast.show({
+        type: 'success',
+        text1: 'Added to favorites',
+        text2: 'Recipe saved successfully',
+      });
+    },
+    onError: (error: any) => {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to add to favorites',
+      });
+    },
+  });
+
+  const removeFromFavoritesMutation = useMutation({
+    mutationFn: userAPI.removeFromFavorites,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userFavorites'] });
+      Toast.show({
+        type: 'success',
+        text1: 'Removed from favorites',
+        text2: 'Recipe removed successfully',
+      });
+    },
+    onError: (error: any) => {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to remove from favorites',
+      });
+    },
+  });
+
   // API call to get recipes
-  const fetchRecipes = async () => {
+  const fetchRecipes = async (categoryId?: string) => {
     try {
       setIsLoading(true);
-      const response = await recipeAPI.getFeaturedRecipes(1, 20);
+      let response;
+      
+      if (categoryId && categoryId !== '') {
+        // Fetch recipes by category using search endpoint
+        response = await recipeAPI.searchRecipes({ 
+          query: '', // Empty query to get all recipes
+          page: 1, 
+          limit: 20,
+          categories: [categoryId]
+        });
+      } else {
+        // Fetch featured recipes when no category selected
+        response = await recipeAPI.getFeaturedRecipes(1, 20);
+      }
+      
       setRecipes(response.data || []);
     } catch (error) {
       console.error('Error fetching recipes:', error);
-      // Show error message but don't use mock data
       setRecipes([]);
     } finally {
       setIsLoading(false);
@@ -77,11 +132,11 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
   const gridLayout = useMemo(() => {
     const numColumns = 2; // Force 2 columns
     const horizontalPadding = COMPONENT_SPACING.GRID.HORIZONTAL_PADDING * 2;
-    const spacing = COMPONENT_SPACING.GRID.SPACING;
+    const columnSpacing = COMPONENT_SPACING.GRID.SPACING;
     const availableWidth = screenWidth - horizontalPadding;
-    const cardWidth = (availableWidth - spacing) / numColumns;
+    const cardWidth = (availableWidth - columnSpacing) / numColumns;
     
-    return { numColumns, cardWidth, spacing };
+    return { numColumns, cardWidth, columnSpacing };
   }, []);
 
   // Backend kategoriler ve recipes
@@ -91,8 +146,8 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
   // Refresh handler
   const onRefresh = useCallback(() => {
     refetchCategories();
-    fetchRecipes();
-  }, [refetchCategories]);
+    fetchRecipes(selectedCategory);
+  }, [refetchCategories, selectedCategory]);
 
   // Fetch recipes on component mount
   React.useEffect(() => {
@@ -105,6 +160,7 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
 
   const handleCategorySelect = useCallback((categoryId: string): void => {
     setSelectedCategory(categoryId);
+    fetchRecipes(categoryId);
     console.log('Category selected:', categoryId);
   }, []);
 
@@ -114,8 +170,10 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
   }, [navigation]);
 
   const handleFavoritePress = useCallback((recipeId: string): void => {
+    // For now, just add to favorites - we can check isFavorite status later
+    addToFavoritesMutation.mutate(recipeId);
     console.log('Favorite toggled for recipe:', recipeId);
-  }, []);
+  }, [addToFavoritesMutation]);
 
   const handleTabPress = useCallback((tabId: string): void => {
     setActiveTab(tabId);
@@ -140,36 +198,20 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
     }
   }, [navigation]);
 
-  // Render recipe grid in 2 columns
-  const renderRecipeGrid = () => {
-    const rows = [];
-    for (let i = 0; i < displayRecipes.length; i += 2) {
-      const leftRecipe = displayRecipes[i];
-      const rightRecipe = displayRecipes[i + 1];
-      
-      rows.push(
-        <View key={`row-${i}`} style={styles.recipeRow}>
-          <View style={[styles.recipeCardWrapper, { width: gridLayout.cardWidth }]}>
-            <RecipeCard
-              recipe={leftRecipe}
-              onPress={() => handleRecipePress(leftRecipe)}
-              onFavoritePress={() => handleFavoritePress(leftRecipe.id)}
-            />
-          </View>
-          {rightRecipe && (
-            <View style={[styles.recipeCardWrapper, { width: gridLayout.cardWidth }]}>
-              <RecipeCard
-                recipe={rightRecipe}
-                onPress={() => handleRecipePress(rightRecipe)}
-                onFavoritePress={() => handleFavoritePress(rightRecipe.id)}
-              />
-            </View>
-          )}
-        </View>
-      );
-    }
-    return rows;
-  };
+  // Render individual recipe item for FlatList
+  const renderRecipeItem = useCallback(({ item, index }: { item: any; index: number }) => {
+    return (
+      <View style={[styles.recipeCardWrapper, { width: gridLayout.cardWidth }]}>
+        <RecipeCard
+          recipe={item}
+          onPress={() => handleRecipePress(item)}
+          onFavoritePress={() => handleFavoritePress(item.id)}
+        />
+      </View>
+    );
+  }, [gridLayout.cardWidth, handleRecipePress, handleFavoritePress]);
+
+  const keyExtractor = useCallback((item: any) => item.id, []);
 
   // Error handling
   if (categoriesError) {
@@ -213,9 +255,17 @@ const HomeScreen = React.memo<HomeScreenProps>(({ navigation }) => {
 
         {/* Recipe Grid (Tek liste - başlık yok) */}
         <View style={styles.recipesSection}>
-          <View style={styles.recipesGrid}>
-            {renderRecipeGrid()}
-          </View>
+          <FlatList
+            data={displayRecipes}
+            renderItem={renderRecipeItem}
+            keyExtractor={keyExtractor}
+            numColumns={gridLayout.numColumns}
+            columnWrapperStyle={gridLayout.numColumns > 1 ? styles.recipeRow : undefined}
+            ItemSeparatorComponent={() => <View style={{ height: SPACING.lg }} />}
+            scrollEnabled={false}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.recipesGrid}
+          />
         </View>
 
         {/* Loading state */}
@@ -250,7 +300,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100, // Fixed navigation overlap - proper bottom padding
+    paddingBottom: COMPONENT_SPACING.NAVIGATION.HEIGHT + SPACING.xl, // Proper navigation clearance
   },
   searchContainer: {
     paddingHorizontal: COMPONENT_SPACING.GRID.HORIZONTAL_PADDING,
@@ -264,15 +314,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: COMPONENT_SPACING.GRID.HORIZONTAL_PADDING,
   },
   recipesGrid: {
-    flex: 1,
+    flexGrow: 1,
   },
   recipeRow: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: SPACING.lg,
+    paddingHorizontal: 0,
   },
   recipeCardWrapper: {
     // Width set dynamically from gridLayout.cardWidth
+    marginBottom: SPACING.sm,
   },
   loadingContainer: {
     paddingVertical: SPACING.xl,

@@ -7,14 +7,18 @@ import {
   StyleSheet,
   FlatList,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Toast from 'react-native-toast-message';
 
 import RecipeCard from '../components/RecipeCard';
 import NavigationBar from '../components/NavigationBar';
 import ScreenHeader from '../components/ScreenHeader';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS } from '../constants';
+import { userAPI } from '../services/api';
+import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOW_PRESETS, COMPONENT_SPACING } from '../constants';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -44,59 +48,67 @@ interface FavoritesScreenProps {
  */
 const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'rating'>('recent');
   const [activeTab, setActiveTab] = useState<string>('favorites');
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
   const [selectedRecipes, setSelectedRecipes] = useState<Set<string>>(new Set());
 
-  // Mock favorite recipes - Backend'den gelecek
-  const [favoriteRecipes, setFavoriteRecipes] = useState<Recipe[]>([
-    {
-      id: 'fav-1',
-      title: 'Mushroom Risosaldkjasldkasjdlsakdjaslkjtto',
-      time: '35 min',
-      category: 'Main Course',
-      image: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=300&h=200&fit=crop',
-      rating: '4.8',
-      isFavorite: true,
+  // Backend favorites query
+  const { 
+    data: favoritesResponse, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useQuery({
+    queryKey: ['userFavorites'],
+    queryFn: () => userAPI.getFavorites(1, 50), // Get all favorites for now
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Remove from favorites mutation
+  const removeFavoriteMutation = useMutation({
+    mutationFn: userAPI.removeFromFavorites,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userFavorites'] });
+      Toast.show({
+        type: 'success',
+        text1: 'Removed from favorites',
+        text2: 'Recipe removed successfully',
+      });
     },
-    {
-      id: 'fav-2',
-      title: 'Chicken Alfredo',
-      time: '25 min',
-      category: 'Main Course',
-      image: 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=300&h=200&fit=crop',
-      rating: '4.7',
-      isFavorite: true,
+    onError: (error: any) => {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to remove from favorites',
+      });
     },
-    {
-      id: 'fav-3',
-      title: 'Berry Smoothie',
-      time: '2 min',
-      category: 'Beverages',
-      image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433a?w=300&h=200&fit=crop',
-      rating: '4.8',
-      isFavorite: true,
+  });
+
+  // Bulk remove favorites mutation
+  const bulkRemoveFavoritesMutation = useMutation({
+    mutationFn: userAPI.removeMultipleFavorites,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['userFavorites'] });
+      setSelectedRecipes(new Set());
+      setIsSelectionMode(false);
+      Toast.show({
+        type: 'success',
+        text1: 'Removed from favorites',
+        text2: `${data.removed} recipe(s) removed successfully`,
+      });
     },
-    {
-      id: 'fav-4',
-      title: 'Pancake Stack',
-      time: '15 min',
-      category: 'Breakfast',
-      image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=300&h=200&fit=crop',
-      rating: '4.9',
-      isFavorite: true,
+    onError: (error: any) => {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to remove recipes from favorites',
+      });
     },
-    {
-      id: 'fav-5',
-      title: 'Greek Salad',
-      time: '8 min',
-      category: 'Salad',
-      image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300&h=200&fit=crop',
-      rating: '4.5',
-      isFavorite: true,
-    },
-  ]);
+  });
+
+  const favoriteRecipes = favoritesResponse?.data || [];
 
   // Sort recipes based on selected option
   const sortedRecipes = useMemo(() => {
@@ -125,14 +137,10 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
         return newSet;
       });
     } else {
-      // Remove from favorites immediately
-      setFavoriteRecipes(prevRecipes => 
-        prevRecipes.filter(recipe => recipe.id !== recipeId)
-      );
-      // TODO: API call to remove from favorites
-      // await recipeService.removeFavorite(recipeId);
+      // Remove from favorites with API call
+      removeFavoriteMutation.mutate(recipeId);
     }
-  }, [isSelectionMode]);
+  }, [isSelectionMode, removeFavoriteMutation]);
 
   const handleRecipePress = useCallback((recipe: Recipe) => {
     if (isSelectionMode) {
@@ -140,25 +148,21 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
       handleFavoritePress(recipe.id);
     } else {
       // Normal modda tarif detayına git
-      navigation?.navigate('RecipeDetail', { recipe });
+      navigation?.navigate('RecipeDetail', { recipeId: recipe.id });
     }
   }, [navigation, isSelectionMode, handleFavoritePress]);
 
   const handleDeletePress = useCallback(() => {
     if (isSelectionMode) {
-      // Delete selected recipes
-      setFavoriteRecipes(prevRecipes => 
-        prevRecipes.filter(recipe => !selectedRecipes.has(recipe.id))
-      );
-      setSelectedRecipes(new Set());
-      setIsSelectionMode(false);
-      // TODO: API call to remove selected favorites
-      // await recipeService.removeMultipleFavorites(Array.from(selectedRecipes));
+      // Delete selected recipes with API call
+      if (selectedRecipes.size > 0) {
+        bulkRemoveFavoritesMutation.mutate(Array.from(selectedRecipes));
+      }
     } else {
       // Enter selection mode
       setIsSelectionMode(true);
     }
-  }, [isSelectionMode, selectedRecipes]);
+  }, [isSelectionMode, selectedRecipes, bulkRemoveFavoritesMutation]);
 
   const handleCancelSelection = useCallback(() => {
     setIsSelectionMode(false);
@@ -302,7 +306,32 @@ const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
         </>
       )}
 
-      {favoriteRecipes.length === 0 && renderEmptyState()}
+      {/* Loading state */}
+      {isLoading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading favorites...</Text>
+        </View>
+      )}
+
+      {/* Error state */}
+      {error && !isLoading && (
+        <View style={styles.emptyState}>
+          <Ionicons name="alert-circle-outline" size={64} color={COLORS.textMuted} />
+          <Text style={styles.emptyStateTitle}>Error loading favorites</Text>
+          <Text style={styles.emptyStateText}>
+            Please try again later
+          </Text>
+          <TouchableOpacity 
+            style={styles.exploreButton}
+            onPress={() => refetch()}
+          >
+            <Text style={styles.exploreButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {favoriteRecipes.length === 0 && !isLoading && !error && renderEmptyState()}
 
       {/* Navigation Bar */}
       <NavigationBar
@@ -416,6 +445,17 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.MD,
     fontWeight: '600',
     color: COLORS.white,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
+  },
+  loadingText: {
+    fontSize: FONT_SIZE.MD,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.sm,
   },
 });
 

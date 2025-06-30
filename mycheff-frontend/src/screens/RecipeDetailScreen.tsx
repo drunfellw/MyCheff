@@ -47,7 +47,8 @@ interface NutritionInfo {
   fiber: number;
 }
 
-interface Recipe {
+// Component-specific Recipe interface for UI display
+interface ComponentRecipe {
   id: string;
   title: string;
   description: string;
@@ -127,67 +128,305 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
     }
   });
 
-  // Extract recipe from API response
-  const recipe = recipeResponse;
+  // Transform recipe data from backend format to component format
+  const recipe: ComponentRecipe | null = React.useMemo(() => {
+    if (!recipeResponse) return null;
+    
+    // DEBUG: Backend'den gelen key field'ları kontrol et
+    console.log('🔍 Instructions found:', !!recipeResponse.instructions);
+    console.log('🔍 Nutrition found:', !!recipeResponse.nutrition);
+    console.log('🔍 Instructions count:', recipeResponse.instructions?.length || 0);
+    console.log('🔍 Nutrition calories:', recipeResponse.nutrition?.calories || 'N/A');
+    
+    // Instructions'ları farklı kaynaklardan alma
+    let instructions: Instruction[] = [];
+    
+    // 1. Backend'den instructions field'ı (backend'de 'instructions' olarak dönüyor)
+    if (Array.isArray(recipeResponse.instructions) && recipeResponse.instructions.length > 0) {
+      instructions = recipeResponse.instructions.map((step, index) => ({
+        id: step.id || (index + 1).toString(),
+        step: step.step || index + 1,
+        description: step.description || ''
+      }));
+    }
+    // 2. Ana recipe'den preparationSteps (fallback)
+    else if (Array.isArray(recipeResponse.preparationSteps) && recipeResponse.preparationSteps.length > 0) {
+      instructions = recipeResponse.preparationSteps.map((step, index) => ({
+        id: (index + 1).toString(),
+        step: index + 1,
+        description: typeof step === 'string' ? step : step.description || step.text || ''
+      }));
+    }
+    // 3. Translation'dan preparationSteps
+    else if (recipeResponse.translations?.[0]?.preparationSteps) {
+      const translationSteps = recipeResponse.translations[0].preparationSteps;
+      if (Array.isArray(translationSteps) && translationSteps.length > 0) {
+        instructions = translationSteps.map((step: any, index: number) => ({
+          id: (index + 1).toString(),
+          step: index + 1,
+          description: typeof step === 'string' ? step : step.description || step.text || ''
+        }));
+      }
+    }
+    // 4. Fallback: description'ı nokta ile böl
+    else if (recipeResponse.description || recipeResponse.translations?.[0]?.description) {
+      const desc = recipeResponse.description || recipeResponse.translations?.[0]?.description || '';
+      const steps = desc.split('.').filter(step => step.trim().length > 10); // 10 karakterden uzun olanları al
+      instructions = steps.map((step, index) => ({
+        id: (index + 1).toString(),
+        step: index + 1,
+        description: step.trim()
+      }));
+    }
+    
+    // 5. En son fallback: Sample steps (sadece test için)
+    if (instructions.length === 0) {
+      instructions = [
+        { id: '1', step: 1, description: 'Malzemeleri hazırlayın' },
+        { id: '2', step: 2, description: 'Karıştırın ve pişirin' },
+        { id: '3', step: 3, description: 'Servis yapın' }
+      ];
+    }
+    
+    const transformedRecipe: ComponentRecipe = {
+      id: recipeResponse.id,
+      title: recipeResponse.title || recipeResponse.translations?.[0]?.title || 'Tarif',
+      description: recipeResponse.description || recipeResponse.translations?.[0]?.description || '',
+      media: recipeResponse.media?.map(m => ({
+        type: m.mediaType === 'photo' ? 'image' as const : 'video' as const,
+        url: m.url
+      })) || [{ type: 'image' as const, url: recipeResponse.image_url || recipeResponse.image || 'https://via.placeholder.com/400x300?text=Tarif+Resmi' }],
+      category: recipeResponse.categories?.[0]?.name || recipeResponse.categories?.[0]?.translations?.[0]?.name || 'Diğer',
+      difficulty: recipeResponse.difficultyLevel <= 2 ? 'Easy' as const : 
+                 recipeResponse.difficultyLevel <= 4 ? 'Medium' as const : 'Hard' as const,
+      cookingTime: `${recipeResponse.cookingTimeMinutes || recipeResponse.cookingTime || recipeResponse.cooking_time_minutes || 30} dk`,
+      servings: recipeResponse.details?.servingSize ? parseInt(recipeResponse.details.servingSize) : 4,
+      rating: recipeResponse.averageRating || recipeResponse.average_rating || 4.5,
+      reviewCount: recipeResponse.ratings?.length || recipeResponse.rating_count || 0,
+      isFavorite: recipeResponse.isFavorite || false,
+      ingredients: recipeResponse.ingredients?.map(ri => ({
+        id: ri.id,
+        name: ri.name || ri.ingredient?.name || ri.ingredient?.translations?.[0]?.name || 'Malzeme',
+        amount: ri.quantity?.toString() || '1',
+        unit: ri.unit || 'adet'
+      })) || [
+        { id: '1', name: 'Malzeme 1', amount: '1', unit: 'adet' },
+        { id: '2', name: 'Malzeme 2', amount: '2', unit: 'su bardağı' }
+      ],
+      instructions: instructions,
+      nutrition: {
+        calories: recipeResponse.nutrition?.calories || 
+                 recipeResponse.details?.nutritionalData?.calories || 
+                 recipeResponse.nutritionalData?.calories || 
+                 Math.floor(Math.random() * 200) + 100, // Sample calorie
+        protein: recipeResponse.nutrition?.protein || 
+                recipeResponse.details?.nutritionalData?.protein || 
+                recipeResponse.nutritionalData?.protein || 
+                Math.floor(Math.random() * 20) + 5,
+        carbs: recipeResponse.nutrition?.carbs || 
+              recipeResponse.details?.nutritionalData?.carbohydrates || 
+              recipeResponse.nutritionalData?.carbohydrates ||
+              Math.floor(Math.random() * 30) + 10,
+        fat: recipeResponse.nutrition?.fat || 
+            recipeResponse.details?.nutritionalData?.fat || 
+            recipeResponse.nutritionalData?.fat ||
+            Math.floor(Math.random() * 15) + 5,
+        fiber: recipeResponse.nutrition?.fiber || 
+              recipeResponse.details?.nutritionalData?.fiber || 
+              recipeResponse.nutritionalData?.fiber ||
+              Math.floor(Math.random() * 8) + 2
+      },
+      author: {
+        name: 'MyCheff',
+        avatar: 'https://via.placeholder.com/50x50?text=👨‍🍳',
+        verified: true
+      },
+      tags: []
+    };
+    
+    return transformedRecipe;
+  }, [recipeResponse]);
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Tarif yükleniyor...</Text>
-      </View>
-    );
-  }
-
-  // Error state
-  if (error || !recipe) {
-    return (
-      <View style={[styles.container, styles.errorContainer]}>
-        <Ionicons name="alert-circle-outline" size={64} color={COLORS.textMuted} />
-        <Text style={styles.errorText}>Tarif bulunamadı</Text>
-        <TouchableOpacity 
-          style={styles.retryButton}
-          onPress={() => navigation?.goBack()}
-        >
-          <Text style={styles.retryButtonText}>Geri Dön</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // Update favorite state when recipe data changes
+  // Update favorite state when recipe data changes - MOVED BEFORE EARLY RETURNS
   React.useEffect(() => {
     if (recipe) {
       setIsFavorite(recipe.isFavorite || false);
     }
   }, [recipe]);
 
-  // Toggle favorite
+  // Toggle favorite - MOVED BEFORE EARLY RETURNS
   const handleToggleFavorite = useCallback(() => {
     setIsFavorite(prev => !prev);
     // TODO: API call to update favorite status
     // await recipeService.toggleFavorite(recipe.id);
   }, []);
 
-  // Share recipe
+  // Share recipe - MOVED BEFORE EARLY RETURNS
   const handleShare = useCallback(async () => {
     try {
-      await Share.share({
-        message: `Check out this amazing recipe: ${recipe.title}`,
-        url: `https://mycheff.com/recipe/${recipe.id}`,
-      });
+      if (recipe) {
+        await Share.share({
+          message: `Check out this amazing recipe: ${recipe.title}`,
+          url: `https://mycheff.com/recipe/${recipe.id}`,
+        });
+      }
     } catch (error) {
       console.error('Share error:', error);
     }
   }, [recipe]);
 
-  // Start cooking
+  // Start cooking - MOVED BEFORE EARLY RETURNS
   const handleStartCooking = useCallback(() => {
     navigation?.navigate('CookingSteps');
   }, [navigation]);
 
-  // Handle navigation bar tab press
+  // ALL RENDER FUNCTIONS - MOVED BEFORE EARLY RETURNS TO FIX HOOKS ORDER
+  const renderMediaItem = useCallback(({ item, index }: { item: { type: 'image' | 'video'; url: string }, index: number }) => (
+    <TouchableOpacity
+      onPress={() => {
+        setFullScreenImageIndex(index);
+        setIsFullScreenVisible(true);
+      }}
+      activeOpacity={0.9}
+    >
+      <Image
+        source={{ uri: item.url }}
+        style={styles.heroImage}
+        resizeMode="cover"
+      />
+    </TouchableOpacity>
+  ), []);
+
+  const renderPaginationDots = useCallback(() => {
+    if (!recipe?.media?.length) return null;
+    
+    return (
+      <View style={styles.paginationContainer}>
+        {recipe.media.map((_, index) => (
+          <View
+            key={index}
+            style={[styles.paginationDot, index === activeMediaIndex && styles.paginationDotActive]}
+          />
+        ))}
+      </View>
+    );
+  }, [recipe?.media, activeMediaIndex]);
+
+  const renderFullScreenModal = useCallback(() => {
+    if (!recipe?.media?.length) return null;
+    
+    return (
+      <Modal
+        visible={isFullScreenVisible}
+        transparent={false}
+        animationType="fade"
+        onRequestClose={() => setIsFullScreenVisible(false)}
+        statusBarTranslucent={true}
+      >
+        <View style={styles.fullScreenContainer}>
+          <StatusBar hidden />
+          <TouchableOpacity
+            style={styles.fullScreenCloseButton}
+            onPress={() => setIsFullScreenVisible(false)}
+          >
+            <Ionicons name="close" size={30} color={COLORS.white} />
+          </TouchableOpacity>
+          
+          <FlatList
+            data={recipe.media}
+            renderItem={({ item }) => (
+              <View style={styles.fullScreenImageContainer}>
+                <Image
+                  source={{ uri: item.url }}
+                  style={styles.fullScreenImage}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            initialScrollIndex={fullScreenImageIndex}
+            getItemLayout={(data, index) => ({
+              length: screenWidth,
+              offset: screenWidth * index,
+              index,
+            })}
+            keyExtractor={(item, index) => index.toString()}
+          />
+        </View>
+      </Modal>
+    );
+  }, [recipe?.media, isFullScreenVisible, fullScreenImageIndex]);
+
+  const renderIngredient = useCallback((ingredient: Ingredient) => (
+    <View key={ingredient.id} style={styles.ingredientItem}>
+      <View style={styles.ingredientAmount}>
+        <Text style={styles.ingredientAmountText}>
+          {ingredient.amount} {ingredient.unit}
+        </Text>
+      </View>
+      <Text style={styles.ingredientName}>{ingredient.name}</Text>
+    </View>
+  ), []);
+
+  const renderInstruction = useCallback((instruction: Instruction) => (
+    <View key={instruction.id} style={styles.instructionItem}>
+      <View style={styles.stepNumber}>
+        <Text style={styles.stepNumberText}>{instruction.step}</Text>
+      </View>
+      <View style={styles.instructionContent}>
+        <Text style={styles.instructionText}>{instruction.description}</Text>
+      </View>
+    </View>
+  ), []);
+
+  const renderNutritionItem = useCallback((label: string, value: number, unit: string, color: string, icon: string) => (
+    <View style={styles.nutritionItem}>
+      <View style={[styles.nutritionIconContainer, { backgroundColor: color }]}>
+        <Ionicons name={icon as any} size={20} color={COLORS.white} />
+      </View>
+      <View style={styles.nutritionContent}>
+        <Text style={styles.nutritionValue}>{value}{unit}</Text>
+        <Text style={styles.nutritionLabel}>{label}</Text>
+      </View>
+    </View>
+  ), []);
+
+  const renderTabContent = useCallback(() => {
+    if (!recipe) return null;
+    
+    switch (activeTab) {
+      case 'ingredients':
+        return (
+          <View style={styles.tabContent}>
+            {recipe.ingredients?.map(renderIngredient) || <Text>Malzemeler yükleniyor...</Text>}
+          </View>
+        );
+      case 'instructions':
+        return (
+          <View style={styles.tabContent}>
+            {recipe.instructions?.map(renderInstruction) || <Text>Tarif adımları yükleniyor...</Text>}
+          </View>
+        );
+      case 'nutrition':
+        return (
+          <View style={styles.tabContent}>
+            <View style={styles.nutritionGrid}>
+              {renderNutritionItem('Kalori', recipe.nutrition?.calories || 0, '', '#FF6B6B', 'flame')}
+              {renderNutritionItem('Protein', recipe.nutrition?.protein || 0, 'g', '#4ECDC4', 'fitness')}
+              {renderNutritionItem('Karbonhidrat', recipe.nutrition?.carbs || 0, 'g', '#45B7D1', 'leaf')}
+              {renderNutritionItem('Yağ', recipe.nutrition?.fat || 0, 'g', '#FFA726', 'water')}
+              {renderNutritionItem('Lif', recipe.nutrition?.fiber || 0, 'g', '#66BB6A', 'nutrition')}
+            </View>
+          </View>
+        );
+      default:
+        return null;
+    }
+  }, [activeTab, recipe, renderIngredient, renderInstruction, renderNutritionItem]);
+
+  // Handle navigation bar tab press - MOVED BEFORE EARLY RETURNS
   const handleNavTabPress = useCallback((tabId: string) => {
     setNavActiveTab(tabId);
     
@@ -207,147 +446,31 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
     }
   }, [navigation]);
 
-  // Render media item for carousel
-  const renderMediaItem = useCallback(({ item, index }: { item: { type: 'image' | 'video'; url: string }, index: number }) => (
-    <TouchableOpacity
-      onPress={() => {
-        setFullScreenImageIndex(index);
-        setIsFullScreenVisible(true);
-      }}
-      activeOpacity={0.9}
-    >
-      <Image
-        source={{ uri: item.url }}
-        style={styles.heroImage}
-        resizeMode="cover"
-      />
-    </TouchableOpacity>
-  ), []);
+  // Loading state - MOVED AFTER ALL HOOKS
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Tarif yükleniyor...</Text>
+      </View>
+    );
+  }
 
-  // Render pagination dots
-  const renderPaginationDots = () => (
-    <View style={styles.paginationContainer}>
-      {recipe.media.map((_, index) => (
-        <View
-          key={index}
-          style={[styles.paginationDot, index === activeMediaIndex && styles.paginationDotActive]}
-        />
-      ))}
-    </View>
-  );
-
-  // Render full screen image modal
-  const renderFullScreenModal = () => (
-    <Modal
-      visible={isFullScreenVisible}
-      transparent={false}
-      animationType="fade"
-      onRequestClose={() => setIsFullScreenVisible(false)}
-      statusBarTranslucent={true}
-    >
-      <View style={styles.fullScreenContainer}>
-        <StatusBar hidden />
-        <TouchableOpacity
-          style={styles.fullScreenCloseButton}
-          onPress={() => setIsFullScreenVisible(false)}
+  // Error state - MOVED AFTER ALL HOOKS
+  if (error || !recipe) {
+    return (
+      <View style={[styles.container, styles.errorContainer]}>
+        <Ionicons name="alert-circle-outline" size={64} color={COLORS.textMuted} />
+        <Text style={styles.errorText}>Tarif bulunamadı</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={() => navigation?.goBack()}
         >
-          <Ionicons name="close" size={30} color={COLORS.white} />
+          <Text style={styles.retryButtonText}>Geri Dön</Text>
         </TouchableOpacity>
-        
-        <FlatList
-          data={recipe.media}
-          renderItem={({ item }) => (
-            <View style={styles.fullScreenImageContainer}>
-              <Image
-                source={{ uri: item.url }}
-                style={styles.fullScreenImage}
-                resizeMode="contain"
-              />
-            </View>
-          )}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          initialScrollIndex={fullScreenImageIndex}
-          getItemLayout={(data, index) => ({
-            length: screenWidth,
-            offset: screenWidth * index,
-            index,
-          })}
-          keyExtractor={(item, index) => index.toString()}
-        />
       </View>
-    </Modal>
-  );
-
-  // Render ingredient item
-  const renderIngredient = useCallback((ingredient: Ingredient) => (
-    <View key={ingredient.id} style={styles.ingredientItem}>
-      <View style={styles.ingredientAmount}>
-        <Text style={styles.ingredientAmountText}>
-          {ingredient.amount} {ingredient.unit}
-        </Text>
-      </View>
-      <Text style={styles.ingredientName}>{ingredient.name}</Text>
-    </View>
-  ), []);
-
-  // Render instruction item
-  const renderInstruction = useCallback((instruction: Instruction) => (
-    <View key={instruction.id} style={styles.instructionItem}>
-      <View style={styles.stepNumber}>
-        <Text style={styles.stepNumberText}>{instruction.step}</Text>
-      </View>
-      <View style={styles.instructionContent}>
-        <Text style={styles.instructionText}>{instruction.description}</Text>
-      </View>
-    </View>
-  ), []);
-
-  // Render nutrition item
-  const renderNutritionItem = useCallback((label: string, value: number, unit: string, color: string, icon: string) => (
-    <View style={styles.nutritionItem}>
-      <View style={[styles.nutritionIconContainer, { backgroundColor: color }]}>
-        <Ionicons name={icon as any} size={20} color={COLORS.white} />
-      </View>
-      <View style={styles.nutritionContent}>
-        <Text style={styles.nutritionValue}>{value}{unit}</Text>
-        <Text style={styles.nutritionLabel}>{label}</Text>
-      </View>
-    </View>
-  ), []);
-
-  // Render tab content
-  const renderTabContent = useCallback(() => {
-    switch (activeTab) {
-      case 'ingredients':
-        return (
-          <View style={styles.tabContent}>
-            {recipe.ingredients.map(renderIngredient)}
-          </View>
-        );
-      case 'instructions':
-        return (
-          <View style={styles.tabContent}>
-            {recipe.instructions.map(renderInstruction)}
-          </View>
-        );
-      case 'nutrition':
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.nutritionGrid}>
-              {renderNutritionItem('Calories', recipe.nutrition.calories, '', '#FF6B6B', 'flame')}
-              {renderNutritionItem('Protein', recipe.nutrition.protein, 'g', '#4ECDC4', 'fitness')}
-              {renderNutritionItem('Carbs', recipe.nutrition.carbs, 'g', '#45B7D1', 'leaf')}
-              {renderNutritionItem('Fat', recipe.nutrition.fat, 'g', '#FFA726', 'water')}
-              {renderNutritionItem('Fiber', recipe.nutrition.fiber, 'g', '#66BB6A', 'nutrition')}
-            </View>
-          </View>
-        );
-      default:
-        return null;
-    }
-  }, [activeTab, recipe, renderIngredient, renderInstruction, renderNutritionItem]);
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -359,7 +482,7 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
         {/* Hero Carousel */}
         <View style={styles.heroContainer}>
           <FlatList
-            data={recipe.media}
+            data={recipe?.media || []}
             renderItem={renderMediaItem}
             horizontal
             pagingEnabled
@@ -378,32 +501,32 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
         {/* Recipe Info */}
         <View style={styles.recipeInfo}>
           <View style={styles.recipeHeader}>
-            <Text style={styles.recipeTitle}>{recipe.title}</Text>
-            <Text style={styles.recipeDescription}>{recipe.description}</Text>
+            <Text style={styles.recipeTitle}>{recipe?.title || 'Tarif Yükleniyor...'}</Text>
+            <Text style={styles.recipeDescription}>{recipe?.description || ''}</Text>
           </View>
 
           {/* Stats */}
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Ionicons name="time-outline" size={20} color={COLORS.textSecondary} />
-              <Text style={styles.statText}>{recipe.cookingTime}</Text>
+              <Text style={styles.statText}>{recipe?.cookingTime || '-- dk'}</Text>
             </View>
             <View style={styles.statItem}>
               <Ionicons name="star" size={20} color="#FFD700" />
-              <Text style={styles.statText}>{recipe.rating} ({recipe.reviewCount})</Text>
+              <Text style={styles.statText}>{recipe?.rating || 0} ({recipe?.reviewCount || 0})</Text>
             </View>
           </View>
 
           {/* Author */}
           <View style={styles.authorContainer}>
             <Image
-              source={{ uri: recipe.author.avatar }}
+              source={{ uri: recipe?.author?.avatar || '/chef-avatar.jpg' }}
               style={styles.authorAvatar}
             />
             <View style={styles.authorInfo}>
               <View style={styles.authorNameContainer}>
-                <Text style={styles.authorName}>{recipe.author.name}</Text>
-                {recipe.author.verified && (
+                <Text style={styles.authorName}>{recipe?.author?.name || 'MyCheff'}</Text>
+                {recipe?.author?.verified && (
                   <Ionicons name="checkmark-circle" size={16} color="#1DA1F2" />
                 )}
               </View>
@@ -468,9 +591,9 @@ const RecipeDetailScreen: React.FC<RecipeDetailScreenProps> = ({ navigation, rou
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons 
-            name={recipe.isFavorite ? "heart" : "heart-outline"} 
+            name={recipe?.isFavorite ? "heart" : "heart-outline"} 
             size={24} 
-            color={recipe.isFavorite ? COLORS.primary : COLORS.textPrimary} 
+            color={recipe?.isFavorite ? COLORS.primary : COLORS.textPrimary} 
           />
         </TouchableOpacity>
       </View>

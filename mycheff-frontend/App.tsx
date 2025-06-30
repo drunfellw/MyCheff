@@ -56,6 +56,7 @@ const AppContent = React.memo(() => {
 
   const navigation: Navigation = useMemo(() => ({
     navigate: (screen: string, params?: NavigationParams) => {
+      console.log('🧭 Navigation: Going to', screen, 'with params:', params);
       const targetScreen = screen as Screen;
       setCurrentScreen(targetScreen);
       setNavigationHistory(prev => [...prev, targetScreen]);
@@ -77,6 +78,7 @@ const AppContent = React.memo(() => {
   }), [currentScreen]);
 
   const renderScreen = useCallback(() => {
+    console.log('🎬 Rendering screen:', currentScreen, 'with params:', currentParams);
     const screenProps = { navigation, route: { params: currentParams } };
     
     // Show authentication screens if not authenticated
@@ -103,6 +105,7 @@ const AppContent = React.memo(() => {
       case 'Favorites':
         return <FavoritesScreen {...screenProps} />;
       case 'RecipeDetail':
+        console.log('🍳 Rendering RecipeDetail with params:', currentParams);
         return <RecipeDetailScreen {...screenProps} />;
       case 'Profile':
         return <ProfileScreen {...screenProps} />;

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import * as bcryptjs from 'bcryptjs';
 import { User } from '../../../entities/user.entity';
 import { UserIngredient } from '../../../entities/user-ingredient.entity';
@@ -161,12 +161,12 @@ export class UsersService {
     await this.userIngredientRepository.remove(userIngredient);
   }
 
-  async getFavorites(
+  async getUserFavorites(
     userId: string,
-    page: number = 1,
-    limit: number = 20,
+    paginationDto: any,
     languageCode: string = 'tr'
   ): Promise<PaginatedResponseDto<any>> {
+    const { page = 1, limit = 20 } = paginationDto;
     const skip = (page - 1) * limit;
 
     const [favorites, total] = await this.userFavoriteRepository
@@ -202,14 +202,14 @@ export class UsersService {
     );
   }
 
-  async addToFavorites(userId: string, recipeId: string): Promise<void> {
+  async addToFavorites(userId: string, recipeId: string): Promise<{ success: boolean; message: string; }> {
     // Check if already favorited
     const existingFavorite = await this.userFavoriteRepository.findOne({
       where: { userId, recipeId },
     });
 
     if (existingFavorite) {
-      return; // Already favorited
+      return { success: true, message: 'Recipe already in favorites' };
     }
 
     const favorite = this.userFavoriteRepository.create({
@@ -218,18 +218,44 @@ export class UsersService {
     });
 
     await this.userFavoriteRepository.save(favorite);
+    return { success: true, message: 'Recipe added to favorites successfully' };
   }
 
-  async removeFromFavorites(userId: string, recipeId: string): Promise<void> {
+  async removeFromFavorites(userId: string, recipeId: string): Promise<{ success: boolean; message: string; }> {
     const favorite = await this.userFavoriteRepository.findOne({
       where: { userId, recipeId },
     });
 
     if (!favorite) {
-      throw new NotFoundException('Favorite not found');
+      return { success: false, message: 'Recipe not in favorites' };
     }
 
     await this.userFavoriteRepository.remove(favorite);
+    return { success: true, message: 'Recipe removed from favorites successfully' };
+  }
+
+  async removeMultipleFavorites(userId: string, recipeIds: string[]): Promise<{ success: boolean; message: string; removed: number; }> {
+    if (!recipeIds || recipeIds.length === 0) {
+      return { success: false, message: 'No recipe IDs provided', removed: 0 };
+    }
+
+    const favorites = await this.userFavoriteRepository.find({
+      where: { 
+        userId, 
+        recipeId: In(recipeIds)
+      },
+    });
+
+    if (favorites.length === 0) {
+      return { success: false, message: 'No matching favorites found', removed: 0 };
+    }
+
+    await this.userFavoriteRepository.remove(favorites);
+    return { 
+      success: true, 
+      message: `${favorites.length} recipe(s) removed from favorites successfully`,
+      removed: favorites.length
+    };
   }
 
   async isFavorite(userId: string, recipeId: string): Promise<boolean> {

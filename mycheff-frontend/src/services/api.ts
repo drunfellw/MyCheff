@@ -112,7 +112,12 @@ export const recipeAPI = {
       // Add other search parameters
       Object.entries(searchParams).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          queryParams.append(key, value.toString());
+          if (Array.isArray(value)) {
+            // Handle array parameters like categories
+            value.forEach(v => queryParams.append(key === 'categories' ? 'categoryIds' : key, v.toString()));
+          } else {
+            queryParams.append(key, value.toString());
+          }
         }
       });
 
@@ -302,17 +307,24 @@ export const userAPI = {
     page: number = 1,
     limit: number = 20
   ): Promise<PaginatedResponse<Recipe>> => {
-    return api.getPaginated<Recipe>(`/user/favorites?page=${page}&limit=${limit}`);
+    return api.getPaginated<Recipe>(`/users/me/favorites?page=${page}&limit=${limit}`);
   },
 
   // Add recipe to favorites
-  addToFavorites: async (recipeId: string): Promise<void> => {
-    return api.post<void>('/user/favorites', { recipeId });
+  addToFavorites: async (recipeId: string): Promise<{ success: boolean; message: string; }> => {
+    return api.post<{ success: boolean; message: string; }>(`/users/me/favorites/${recipeId}`);
   },
 
   // Remove recipe from favorites
-  removeFromFavorites: async (recipeId: string): Promise<void> => {
-    return api.delete<void>(`/user/favorites/${recipeId}`);
+  removeFromFavorites: async (recipeId: string): Promise<{ success: boolean; message: string; }> => {
+    return api.delete<{ success: boolean; message: string; }>(`/users/me/favorites/${recipeId}`);
+  },
+
+  // Remove multiple recipes from favorites
+  removeMultipleFavorites: async (recipeIds: string[]): Promise<{ success: boolean; message: string; removed: number; }> => {
+    return api.post<{ success: boolean; message: string; removed: number; }>('/users/me/favorites/bulk-delete', {
+      recipeIds
+    });
   },
 
   // Check if recipe is favorite

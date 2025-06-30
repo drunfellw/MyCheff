@@ -11,6 +11,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Put,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,6 +25,7 @@ import { UsersService } from '../services/users.service';
 import { UpdateUserDto, ChangePasswordDto, UserResponseDto } from '../dto/user.dto';
 import { ApiResponseDto, PaginatedResponseDto } from '../../../common/dto/api-response.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 @ApiTags('users')
 @Controller('user')
@@ -195,5 +197,53 @@ export class UsersController {
   ): Promise<ApiResponseDto<{ isFavorite: boolean }>> {
     const isFavorite = await this.usersService.isFavorite(req.user.id, recipeId);
     return new ApiResponseDto({ isFavorite }, 'Favorite status checked');
+  }
+
+  @Get('me/favorites')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user favorites' })
+  @ApiResponse({ status: 200, description: 'User favorites retrieved successfully.' })
+  async getUserFavorites(
+    @Request() req: any,
+    @Query() paginationDto: PaginationDto
+  ) {
+    return this.usersService.getUserFavorites(req.user.id, paginationDto);
+  }
+
+  @Post('me/favorites/:recipeId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add recipe to favorites' })
+  @ApiResponse({ status: 201, description: 'Recipe added to favorites successfully.' })
+  async addToFavoritesPost(
+    @Request() req: any,
+    @Param('recipeId') recipeId: string
+  ) {
+    return this.usersService.addToFavorites(req.user.id, recipeId);
+  }
+
+  @Delete('me/favorites/:recipeId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove recipe from favorites' })
+  @ApiResponse({ status: 200, description: 'Recipe removed from favorites successfully.' })
+  async removeFromFavoritesPost(
+    @Request() req: any,
+    @Param('recipeId') recipeId: string
+  ) {
+    return this.usersService.removeFromFavorites(req.user.id, recipeId);
+  }
+
+  @Post('me/favorites/bulk-delete')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove multiple recipes from favorites' })
+  @ApiResponse({ status: 200, description: 'Recipes removed from favorites successfully.' })
+  async removeMultipleFavorites(
+    @Request() req: any,
+    @Body() body: { recipeIds: string[] }
+  ) {
+    return this.usersService.removeMultipleFavorites(req.user.id, body.recipeIds);
   }
 } 

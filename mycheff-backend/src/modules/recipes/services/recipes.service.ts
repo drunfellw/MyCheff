@@ -91,6 +91,13 @@ export class RecipesService {
     try {
       console.log('🔍 Searching for recipe with ID:', id);
       
+      if (!id || id === 'undefined') {
+        return {
+          success: false,
+          message: 'Invalid recipe ID provided',
+        };
+      }
+      
       // Simple query without any joins
       const recipe = await this.recipeRepository
         .createQueryBuilder('recipe')
@@ -115,66 +122,12 @@ export class RecipesService {
 
       console.log('✅ Recipe found successfully!');
 
-      // Return real recipe data with mock detailed content for now
+      // Create dynamic content based on recipe ID
+      const recipeData = this.getRecipeDetailsByIdMock(recipe, id);
+
       return {
         success: true,
-        data: {
-          id: recipe.id,
-          title: 'Döner Kebab',
-          description: 'Geleneksel Türk döner kebabı tarifi',
-          media: [
-            { 
-              type: 'image', 
-              url: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&h=600&fit=crop' 
-            },
-            { 
-              type: 'image', 
-              url: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=600&fit=crop' 
-            },
-          ],
-          category: 'Ana Yemek',
-          difficulty: 'Medium',
-          cookingTime: `${recipe.cookingTimeMinutes || 30} min`,
-          servings: recipe.servingSize || 4,
-          rating: parseFloat(recipe.averageRating?.toString() || '4.5'),
-          reviewCount: recipe.ratingCount || 25,
-          isFavorite: false,
-          ingredients: [
-            { id: '1', name: 'Et', amount: '500', unit: 'g' },
-            { id: '2', name: 'Soğan', amount: '2', unit: 'adet' },
-            { id: '3', name: 'Sarımsak', amount: '3', unit: 'diş' },
-            { id: '4', name: 'Domates', amount: '3', unit: 'adet' },
-            { id: '5', name: 'Biber', amount: '2', unit: 'adet' },
-            { id: '6', name: 'Zeytinyağı', amount: '3', unit: 'yemek kaşığı' },
-            { id: '7', name: 'Tuz', amount: '1', unit: 'tatlı kaşığı' },
-            { id: '8', name: 'Karabiber', amount: '1/2', unit: 'tatlı kaşığı' },
-          ],
-          instructions: [
-            { id: '1', step: 1, description: 'Malzemeleri hazırlayın ve doğrayın.' },
-            { id: '2', step: 2, description: 'Tavada zeytinyağını ısıtın.' },
-            { id: '3', step: 3, description: 'Soğanları pembeleşene kadar kavurun.' },
-            { id: '4', step: 4, description: 'Sarımsakları ekleyip kokusunu çıkarın.' },
-            { id: '5', step: 5, description: 'Eti ekleyip rengi değişene kadar pişirin.' },
-            { id: '6', step: 6, description: 'Domates ve biberleri ekleyin.' },
-            { id: '7', step: 7, description: 'Baharatları ekleyip karıştırın.' },
-            { id: '8', step: 8, description: '15-20 dakika orta ateşte pişirin.' },
-          ],
-          nutrition: {
-            calories: 320,
-            protein: 25,
-            carbs: 15,
-            fat: 18,
-            fiber: 4,
-          },
-          author: {
-            name: 'Chef Mehmet',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-            verified: true,
-          },
-          tags: ['Türk Mutfağı', 'Ana Yemek', 'Geleneksel'],
-          createdAt: recipe.createdAt,
-          updatedAt: recipe.updatedAt,
-        },
+        data: recipeData,
         message: 'Recipe retrieved successfully',
       };
     } catch (error) {
@@ -185,6 +138,126 @@ export class RecipesService {
         error: error.message,
       };
     }
+  }
+
+  private getRecipeDetailsByIdMock(recipe: Recipe, id: string) {
+    // Featured recipes with different content for each
+    const recipeDetails = {
+      '072cafd2-f2be-4633-bf21-0c1f4c3b6f76': {
+        title: 'Köfte',
+        description: 'Geleneksel Türk köftesi - yumuşak, lezzetli ve pratik',
+        imageUrl: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&h=600&fit=crop',
+        ingredients: [
+          { id: '1', name: 'Kıyma', amount: '500', unit: 'g' },
+          { id: '2', name: 'Soğan', amount: '1', unit: 'adet' },
+          { id: '3', name: 'Yumurta', amount: '1', unit: 'adet' },
+          { id: '4', name: 'Galeta unu', amount: '3', unit: 'yemek kaşığı' },
+          { id: '5', name: 'Tuz', amount: '1', unit: 'tatlı kaşığı' },
+          { id: '6', name: 'Karabiber', amount: '1/2', unit: 'tatlı kaşığı' },
+        ],
+        instructions: [
+          { id: '1', step: 1, description: 'Kıymayı derin bir kaba alın' },
+          { id: '2', step: 2, description: 'Soğanı rendeleyin ve kıymaya ekleyin' },
+          { id: '3', step: 3, description: 'Yumurta, galeta unu ve baharatları ekleyin' },
+          { id: '4', step: 4, description: 'Güzelce yoğurun ve dinlendirin' },
+          { id: '5', step: 5, description: 'Köfte şekli verin' },
+          { id: '6', step: 6, description: 'Tavada kızartın' },
+        ],
+        nutrition: { calories: 285, protein: 24, carbs: 12, fat: 16, fiber: 2 }
+      },
+      '69331729-9409-4d75-975d-0f9e11ccceb7': {
+        title: 'Domates Soslu Makarna',
+        description: 'Taze domates sosu ile hazırlanan klasik İtalyan lezzeti',
+        imageUrl: 'https://images.unsplash.com/photo-1551892374-ecf8754cf8b0?w=800&h=600&fit=crop',
+        ingredients: [
+          { id: '1', name: 'Makarna', amount: '250', unit: 'g' },
+          { id: '2', name: 'Domates', amount: '4', unit: 'adet' },
+          { id: '3', name: 'Sarımsak', amount: '3', unit: 'diş' },
+          { id: '4', name: 'Zeytinyağı', amount: '3', unit: 'yemek kaşığı' },
+          { id: '5', name: 'Fesleğen', amount: '10', unit: 'yaprak' },
+          { id: '6', name: 'Parmesan', amount: '50', unit: 'g' },
+        ],
+        instructions: [
+          { id: '1', step: 1, description: 'Makarnayı kaynar tuzlu suda haşlayın' },
+          { id: '2', step: 2, description: 'Domatesleri rendeleyin' },
+          { id: '3', step: 3, description: 'Sarımsakları kavurun' },
+          { id: '4', step: 4, description: 'Domates sosunu ekleyip pişirin' },
+          { id: '5', step: 5, description: 'Makarna ile karıştırın' },
+          { id: '6', step: 6, description: 'Fesleğen ve parmesan ile servis yapın' },
+        ],
+        nutrition: { calories: 320, protein: 12, carbs: 58, fat: 8, fiber: 4 }
+      },
+      'da8f9703-46ab-46f7-819a-2f65817e8a88': {
+        title: 'İskender Kebap',
+        description: 'Bursa\'nın meşhur lezzeti - tereyağlı domates sosu ile',
+        imageUrl: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&h=600&fit=crop',
+        ingredients: [
+          { id: '1', name: 'Dana döner eti', amount: '300', unit: 'g' },
+          { id: '2', name: 'Pide ekmeği', amount: '2', unit: 'dilim' },
+          { id: '3', name: 'Yoğurt', amount: '200', unit: 'g' },
+          { id: '4', name: 'Tereyağı', amount: '50', unit: 'g' },
+          { id: '5', name: 'Domates sosu', amount: '100', unit: 'ml' },
+          { id: '6', name: 'Pul biber', amount: '1', unit: 'tatlı kaşığı' },
+        ],
+        instructions: [
+          { id: '1', step: 1, description: 'Döner etini ince dilimleyin' },
+          { id: '2', step: 2, description: 'Pide ekmeğini küçük parçalara ayırın' },
+          { id: '3', step: 3, description: 'Tabağa ekmekleri yerleştirin' },
+          { id: '4', step: 4, description: 'Üzerine eti dizin' },
+          { id: '5', step: 5, description: 'Tereyağlı sosu dökün' },
+          { id: '6', step: 6, description: 'Yoğurt ve pul biber ile servis yapın' },
+        ],
+        nutrition: { calories: 420, protein: 32, carbs: 28, fat: 22, fiber: 3 }
+      }
+    };
+
+    const defaultRecipe = {
+      title: 'Türk Yemeği',
+      description: 'Geleneksel Türk mutfağından lezzetli tarif',
+      imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=600&fit=crop',
+      ingredients: [
+        { id: '1', name: 'Ana malzeme', amount: '200', unit: 'g' },
+        { id: '2', name: 'Soğan', amount: '1', unit: 'adet' },
+        { id: '3', name: 'Zeytinyağı', amount: '2', unit: 'yemek kaşığı' },
+      ],
+      instructions: [
+        { id: '1', step: 1, description: 'Malzemeleri hazırlayın' },
+        { id: '2', step: 2, description: 'Karıştırın ve pişirin' },
+        { id: '3', step: 3, description: 'Servis yapın' },
+      ],
+      nutrition: { calories: 250, protein: 15, carbs: 20, fat: 12, fiber: 3 }
+    };
+
+    const recipeData = recipeDetails[id] || defaultRecipe;
+
+    return {
+      id: recipe.id,
+      title: recipeData.title,
+      description: recipeData.description,
+      media: [
+        { type: 'image', url: recipeData.imageUrl },
+        { type: 'image', url: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=600&fit=crop' },
+      ],
+      category: 'Ana Yemek',
+      difficulty: 'Medium',
+      cookingTime: `${recipe.cookingTimeMinutes || 30} min`,
+      cookingTimeMinutes: recipe.cookingTimeMinutes || 30,
+      servings: recipe.servingSize || 4,
+      rating: parseFloat(recipe.averageRating?.toString() || '4.5'),
+      reviewCount: recipe.ratingCount || 25,
+      isFavorite: false,
+      ingredients: recipeData.ingredients,
+      instructions: recipeData.instructions,
+      nutrition: recipeData.nutrition,
+      author: {
+        name: 'Chef Mehmet',
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+        verified: true,
+      },
+      tags: ['Türk Mutfağı', 'Ana Yemek', 'Geleneksel'],
+      createdAt: recipe.createdAt,
+      updatedAt: recipe.updatedAt,
+    };
   }
 
   async getAllCategories(languageCode: string = 'tr') {
